@@ -47,6 +47,13 @@ export function validateInput(state: GameState, input: WeekInput): string | null
   if (state.flags.burnout_active && work + hustle > CONFIG.energy.burnoutMaxHours) {
     return `While burned out, work + hustle cannot exceed ${CONFIG.energy.burnoutMaxHours} hours`;
   }
+  // Full-time job hustle cap: > 20 hustle hours not allowed
+  if (state.activeJobId) {
+    const job = CONFIG.cities.kingston.jobs.find(j => j.id === state.activeJobId);
+    if (job && job.minCommitHours >= 40 && hustle > 20) {
+      return 'Full-time job limits hustle to 20 hours per week';
+    }
+  }
   return null;
 }
 
@@ -97,8 +104,14 @@ export function step(
   const productivityMult =
     state.energy < CONFIG.energy.burnoutThreshold ? CONFIG.energy.burnoutProductivityMult : 1;
 
+  const jobWage = (() => {
+    if (!state.activeJobId) return city.baseHourlyWageUsd;
+    const job = CONFIG.cities.kingston.jobs.find(j => j.id === state.activeJobId);
+    return job ? job.hourlyWageUsd : city.baseHourlyWageUsd;
+  })();
+
   const workHustleIncome =
-    work * city.baseHourlyWageUsd * productivityMult + hustle * hustleRate * productivityMult;
+    work * jobWage * productivityMult + hustle * hustleRate * productivityMult;
 
   // Passive income from business assets
   const businessIncome = state.assets.reduce(
@@ -162,6 +175,31 @@ export function step(
     overdueWeeks = 0;
   }
 
+  // --- Job under-hours tracking and loss ---
+  let activeJobId = state.activeJobId;
+  let underHoursWeeks = state.underHoursWeeks;
+  let reputation = state.reputation;
+
+  if (activeJobId) {
+    const job = CONFIG.cities.kingston.jobs.find(j => j.id === activeJobId)!;
+    if (job.lossConsecutiveWeeks > 0) {
+      if (work < job.lossThresholdHours) {
+        underHoursWeeks += 1;
+      } else {
+        underHoursWeeks = 0;
+      }
+      if (underHoursWeeks >= job.lossConsecutiveWeeks) {
+        stepHistory = [
+          ...stepHistory,
+          { week: state.week + 1, action: `lost_job_${activeJobId}`, tags: [`lost_job_${activeJobId}`] },
+        ];
+        reputation = Math.max(0, reputation - CONFIG.reputation.jobLossPenalty);
+        activeJobId = null;
+        underHoursWeeks = 0;
+      }
+    }
+  }
+
   // Recovery is halved while burnout_active
   const recoveryMult = state.flags.burnout_active ? CONFIG.energy.burnoutRecoveryMult : 1;
   const recovery = rest * CONFIG.energy.restRecoveryPerHour * recoveryMult;
@@ -208,6 +246,9 @@ export function step(
     overdueWeeks,
     housingTier,
     trust,
+    reputation,
+    activeJobId,
+    underHoursWeeks,
   };
 
   // Recalculate wealthTier from final net worth
@@ -288,6 +329,43 @@ export function launchBusiness(
       cashUsd: round2(state.cashUsd - bizType.launchCostUsd),
       assets: [...state.assets, asset],
       history: newHistory,
+    },
+    null,
+  ];
+}
+
+export function holdJob(
+  state: GameState,
+  jobId: string,
+): [GameState, string | null] {
+  const job = CONFIG.cities.kingston.jobs.find(j => j.id === jobId);
+  if (!job) return [state, `Unknown job id: ${jobId}`];
+  return [
+    {
+      ...state,
+      activeJobId: jobId,
+      underHoursWeeks: 0,
+      history: [
+        ...state.history,
+        { week: state.week, action: `took_job_${jobId}`, tags: [`took_job_${jobId}`] },
+      ],
+    },
+    null,
+  ];
+}
+
+export function quitJob(state: GameState): [GameState, string | null] {
+  if (!state.activeJobId) return [state, 'No active job to quit'];
+  const jobId = state.activeJobId;
+  return [
+    {
+      ...state,
+      activeJobId: null,
+      underHoursWeeks: 0,
+      history: [
+        ...state.history,
+        { week: state.week, action: `quit_job_${jobId}`, tags: [`quit_job_${jobId}`] },
+      ],
     },
     null,
   ];

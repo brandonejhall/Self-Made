@@ -13,6 +13,20 @@ Every agent reads this first and updates it last.
 
 - Nothing.
 
+## SM-010 changes
+
+- `sim/index.ts` exports two new functions:
+  - `holdJob(state, jobId): [GameState, string | null]`: looks up the job id in `CONFIG.cities.kingston.jobs`; returns error for unknown ids; on success sets `activeJobId = jobId`, resets `underHoursWeeks = 0`, appends `took_job_<id>` history entry with matching tag.
+  - `quitJob(state): [GameState, string | null]`: returns error if `activeJobId` is null; on success clears `activeJobId = null`, resets `underHoursWeeks = 0`, appends `quit_job_<id>` history entry.
+- `sim/index.ts` `validateInput()`: added full-time hustle cap — when `state.activeJobId` is set and the job's `minCommitHours >= 40`, hustle > 20 is rejected with `'Full-time job limits hustle to 20 hours per week'`.
+- `sim/index.ts` `step()`: work income now uses job wage — `jobWage` is resolved from the held job's `hourlyWageUsd` (or `city.baseHourlyWageUsd` if no job is held). The `workHustleIncome` formula uses `jobWage` instead of `city.baseHourlyWageUsd`.
+- `sim/index.ts` `step()`: job under-hours tracking and loss added after the eviction block:
+  - If a job is held and `job.lossConsecutiveWeeks > 0`, `underHoursWeeks` increments when `work < job.lossThresholdHours`, resets to 0 otherwise.
+  - When `underHoursWeeks >= job.lossConsecutiveWeeks`: `lost_job_<id>` history entry is appended, `reputation` is reduced by `CONFIG.reputation.jobLossPenalty` (clamped to 0), `activeJobId` and `underHoursWeeks` are reset to null/0.
+  - Gig job (`lossConsecutiveWeeks = 0`) is never lost regardless of work hours.
+  - `reputation`, `activeJobId`, and `underHoursWeeks` are now mutable `let` variables in `step()` and are included in the returned state.
+- `tests/sim/jobs.test.ts` added with 28 tests covering all acceptance criteria.
+
 ## SM-008 changes
 
 - `sim/types.ts`: Added three new exported interfaces: `EventTrigger`, `EventChoice`, and `GameEvent`.
