@@ -18,6 +18,9 @@ import {
   holdJob,
   takeLoan,
   launchBusiness,
+  reinvestBusiness,
+  buyProperty,
+  mortgagePaymentUsd,
   type GameState,
   type WeekInput,
   type GameEvent,
@@ -153,6 +156,69 @@ type StrategyFn = {
 };
 type StrategyFactory = (seed: number) => StrategyFn;
 
+// ── Growth helpers (SM-025): business reinvestment and rental property ────
+
+// Weekly outflow the player is committed to: rent + living + loan and mortgage payments
+// + property maintenance. Strategies size their cash buffer in weeks of this number.
+function weeklyCostsUsd(s: GameState): number {
+  const city = CONFIG.cities[s.cityId];
+  const rent = city.housingTiers[s.housingTier]!.weeklyRentUsd + city.weeklyLivingCostUsd;
+  const debt = s.liabilities.reduce((sum, l) => sum + l.weeklyPaymentUsd, 0);
+  const maint = s.assets.filter(a => a.kind === "property")
+    .reduce((sum, a) => sum + (a.bookValueUsd * CONFIG.property.maintenancePctPerYear) / CONFIG.time.weeksPerYear, 0);
+  return rent + debt + maint;
+}
+
+const LONG_TERM = Math.max(...CONFIG.property.mortgageTermWeeksOptions);
+
+// Put the full remaining stage requirement into each business below the top stage,
+// in asset order, when cash after the reinvestment covers bufferWeeks of costs.
+function reinvestAll(s: GameState, bufferWeeks: number): GameState {
+  let cur = s;
+  for (const a of s.assets) {
+    if (a.kind !== "business") continue;
+    const next = CONFIG.businesses.stages[a.stage ?? 1];
+    if (!next) continue;
+    const need = next.reinvestToEnterUsd - (a.reinvestedAtStageUsd ?? 0);
+    if (need <= 0) continue;
+    if (cur.cashUsd - need < bufferWeeks * weeklyCostsUsd(cur)) continue;
+    const [ns, err] = reinvestBusiness(cur, a.id, need);
+    if (!err) cur = ns;
+  }
+  return cur;
+}
+
+// Buy the most expensive property type whose minimum down payment + closing leaves
+// bufferWeeks of post-purchase costs (new mortgage and maintenance included).
+// Repeats until the cap or until nothing is affordable. 1040-week term, minimum down.
+function buyProperties(s: GameState, bufferWeeks: number): GameState {
+  let cur = s;
+  const P = CONFIG.property;
+  const types = [...P.types].sort((a, b) => b.priceUsd - a.priceUsd);
+  for (;;) {
+    if (cur.assets.filter(a => a.kind === "property").length >= P.maxOwned) return cur;
+    let bought = false;
+    for (const t of types) {
+      const down = Math.round(t.priceUsd * P.minDownPaymentPct * 100) / 100;
+      const closing = t.priceUsd * P.closingCostPct;
+      const pay = mortgagePaymentUsd(t.priceUsd - down, P.mortgageAprPct, LONG_TERM);
+      const maint = (t.priceUsd * P.maintenancePctPerYear) / CONFIG.time.weeksPerYear;
+      const after = weeklyCostsUsd(cur) + pay + maint;
+      if (cur.cashUsd - down - closing < bufferWeeks * after) continue;
+      const [ns, err] = buyProperty(cur, t.id, down, LONG_TERM);
+      if (!err) { cur = ns; bought = true; break; }
+    }
+    if (!bought) return cur;
+  }
+}
+
+function loanCount(s: GameState): number {
+  return s.liabilities.filter(l => l.kind !== "mortgage").length;
+}
+
+const COMPETENT_BUFFER_WEEKS = 8;
+const GREEDY_BUFFER_WEEKS = 2;
+
 // ── Passive ───────────────────────────────────────────────────────────────
 // Keeps the full-time job. 40 work + 60 rest. No hustle, loans or businesses.
 
@@ -169,7 +235,8 @@ const passive: StrategyFactory = () => ({
 });
 
 // ── Competent ─────────────────────────────────────────────────────────────
-// Balanced work/hustle/study. Holds jobs, takes one loan, launches 2 businesses.
+// Balanced work/hustle/study. Holds jobs, takes one loan, launches 2 businesses when eligible,
+// reinvests toward the next stage and buys rental property, both with an 8-week cash buffer.
 
 const competent: StrategyFactory = () => ({
   weekInput: (s) => {
@@ -191,7 +258,7 @@ const competent: StrategyFactory = () => ({
       const jobId = cur.flags.skill_financial_unlocked ? "skilled" : "full_time";
       cur = holdJob(cur, jobId)[0];
     }
-    if (cur.liabilities.length === 0 && cur.reputation >= CONFIG.loans.minReputation) {
+    if (loanCount(cur) === 0 && cur.reputation >= CONFIG.loans.minReputation) {
       const [ns, err] = takeLoan(cur, 2500, 52);
       if (!err) cur = ns;
     }
@@ -205,12 +272,15 @@ const competent: StrategyFactory = () => ({
       const [ns, err] = launchBusiness(cur, "delivery_service");
       if (!err) cur = ns;
     }
+    cur = reinvestAll(cur, COMPETENT_BUFFER_WEEKS);
+    cur = buyProperties(cur, COMPETENT_BUFFER_WEEKS);
     return cur;
   },
 });
 
 // ── Greedy ────────────────────────────────────────────────────────────────
-// Unlocks businesses in week 1, max loans, every business, cash-max event choices.
+// Unlocks businesses in week 1, max loans, every business as soon as allowed, cash-max event
+// choices. Reinvests and buys property at max leverage with only a 2-week cash buffer.
 
 const greedy: StrategyFactory = () => ({
   weekInput: (s) => {
@@ -243,6 +313,8 @@ const greedy: StrategyFactory = () => ({
         }
       }
     }
+    cur = reinvestAll(cur, GREEDY_BUFFER_WEEKS);
+    cur = buyProperties(cur, GREEDY_BUFFER_WEEKS);
     return cur;
   },
 });
@@ -301,6 +373,8 @@ type RunResult = {
   delayedFired: string[];
   picks: string[]; // "eventId#choiceIndex"
   finalNw: number;
+  weekAtStage: (number | null)[]; // index n = first week any owned business was at stage n (1..4)
+  propsAt: Record<number, number>; // properties owned at each sample week
 };
 
 function ageAtWeek(w: number): number {
@@ -314,6 +388,9 @@ function runOne(factory: StrategyFactory, seed: number): RunResult {
   let weekAt1M: number | null = null;
   const delayedFired: string[] = [];
   const picks: string[] = [];
+  const stageCount = CONFIG.businesses.stages.length;
+  const weekAtStage: (number | null)[] = Array.from({ length: stageCount + 1 }, () => null);
+  const propsAt: Record<number, number> = {};
 
   for (let w = 0; w < WEEKS; w++) {
     const { state: stepped, pendingEvents } = step(s, strategy.weekInput(s), EVENTS);
@@ -328,7 +405,14 @@ function runOne(factory: StrategyFactory, seed: number): RunResult {
     const week = w + 1;
     const nw = netWorthUsd(s);
     if (weekAt1M === null && nw >= MILLION) weekAt1M = week;
-    if (SAMPLE_WEEKS.includes(week)) snaps[week] = nw;
+    if (SAMPLE_WEEKS.includes(week)) {
+      snaps[week] = nw;
+      propsAt[week] = s.assets.filter(a => a.kind === "property").length;
+    }
+    for (const a of s.assets) {
+      if (a.kind !== "business") continue;
+      for (let n = 1; n <= (a.stage ?? 1); n++) if (weekAtStage[n] === null) weekAtStage[n] = week;
+    }
   }
 
   return {
@@ -339,6 +423,8 @@ function runOne(factory: StrategyFactory, seed: number): RunResult {
     delayedFired,
     picks,
     finalNw: netWorthUsd(s),
+    weekAtStage,
+    propsAt,
   };
 }
 
@@ -376,6 +462,9 @@ type Summary = {
   winningDef: string;
   winners: RunResult[];
   dominant: [string, number][];
+  stageAge: (number | null)[]; // median age at first reaching stage n; null = median run never did
+  stageReached: number[];
+  propsMedian: Record<number, number>;
 };
 
 function summarize(name: string, runs: RunResult[]): Summary {
@@ -408,10 +497,24 @@ function summarize(name: string, runs: RunResult[]): Summary {
     .filter(([, n]) => n / winners.length > 0.8)
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 
+  const stageAge: (number | null)[] = [];
+  const stageReached: number[] = [];
+  for (let n = 1; n <= CONFIG.businesses.stages.length; n++) {
+    const ws = runs.map(r => r.weekAtStage[n] ?? Infinity).sort((a, b) => a - b);
+    const m = quantile(ws, 0.5);
+    stageAge[n] = Number.isFinite(m) ? ageAtWeek(m) : null;
+    stageReached[n] = runs.filter(r => r.weekAtStage[n] !== null).length;
+  }
+  const propsMedian: Record<number, number> = {};
+  for (const w of SAMPLE_WEEKS) propsMedian[w] = quantile(runs.map(r => r.propsAt[w]!).sort((a, b) => a - b), 0.5);
+
   return {
     name,
     runs,
     snapSorted,
+    stageAge,
+    stageReached,
+    propsMedian,
     reached1M,
     medianAge1M: Number.isFinite(medWeek) ? ageAtWeek(medWeek) : null,
     evictions: runs.filter(r => r.evicted).length,
@@ -446,7 +549,7 @@ const S = Object.fromEntries(summaries.map(s => [s.name, s])) as Record<string, 
 
 const g = S.greedy!, c = S.competent!, p = S.passive!;
 const ageStr = (a: number | null) => (a === null ? "not reached" : a.toFixed(1));
-const greedyDelayedRate = g.runsWithDelayed / SEEDS;
+const greedyMajorRate = g.runsWithMajor / SEEDS;
 const passiveMed468 = quantile(p.snapSorted[468]!, 0.5);
 
 const targets = [
@@ -464,9 +567,9 @@ const targets = [
   },
   {
     id: "T3",
-    target: "50%+ of greedy runs fire a delayed consequence",
-    actual: `${pctStr(g.runsWithDelayed, SEEDS)} any; ${pctStr(g.runsWithMajor, SEEDS)} major`,
-    pass: greedyDelayedRate >= 0.5,
+    target: "50%+ of greedy runs fire a major delayed consequence",
+    actual: `${pctStr(g.runsWithMajor, SEEDS)} major; ${pctStr(g.runsWithDelayed, SEEDS)} any`,
+    pass: greedyMajorRate >= 0.5,
   },
   {
     id: "T4",
@@ -479,7 +582,7 @@ const targets = [
 // ── Build report ──────────────────────────────────────────────────────────
 
 const L: string[] = [];
-L.push("# Balance Report (SM-019)", "");
+L.push("# Balance Report (SM-025)", "");
 L.push(`Seeds 0 to ${SEEDS - 1} per strategy (${SEEDS} runs each), city kingston, ${WEEKS} weeks. Reproduce one run with \`newGame(seed, "kingston")\` and the strategy in \`tests/balance/run.ts\`.`);
 L.push(`Events loaded: ${EVENTS.length} from ${EVENT_FILES.length} files. Delayed-consequence events (requiresTags + minYearsAfterTag): ${[...DELAYED_IDS].map(i => `\`${i}\``).join(", ")}.`);
 L.push(`Runtime: ${elapsedSec.toFixed(1)} s for ${SEEDS * STRATEGIES.length} runs.`, "");
@@ -517,6 +620,18 @@ for (const id of DELAYED_IDS) {
   L.push(`| \`${id}\`${MAJOR_IDS.has(id) ? " (major)" : ""} (${(EVENT_BY_ID.get(id)!.trigger.requiresTags ?? []).join(", ")}) | ${summaries.map(s => s.delayedByEvent.get(id) ?? 0).join(" | ")} |`);
 }
 L.push("");
+
+L.push("## Business stages and property", "");
+L.push(`Growth rules: competent reinvests the full remaining stage requirement and buys property (min ${CONFIG.property.minDownPaymentPct * 100}% down, ${LONG_TERM}-week mortgage, most expensive affordable type, up to ${CONFIG.property.maxOwned}) only when cash afterward covers ${COMPETENT_BUFFER_WEEKS} weeks of costs. Greedy does the same with a ${GREEDY_BUFFER_WEEKS}-week buffer. Passive never launches, reinvests or buys. Random launches at random and never reinvests or buys. Weekly costs = rent + living + loan and mortgage payments + property maintenance.`, "");
+L.push("Median age at the first week any owned business sits at stage N. Not reached = the median run never got there by W468.", "");
+const stageNames = CONFIG.businesses.stages.map(st => `Stage ${st.stage} (${st.name})`);
+L.push(`| Strategy | ${stageNames.join(" | ")} | Props W156 | Props W312 | Props W468 |`);
+L.push(`|---|${stageNames.map(() => "---").join("|")}|---|---|---|`);
+for (const s of summaries) {
+  const st = CONFIG.businesses.stages.map(x => `${ageStr(s.stageAge[x.stage] ?? null)} (${pctStr(s.stageReached[x.stage]!, SEEDS)})`);
+  L.push(`| ${s.name} | ${st.join(" | ")} | ${SAMPLE_WEEKS.map(w => s.propsMedian[w]).join(" | ")} |`);
+}
+L.push("", "Percent in parentheses = share of runs that reached the stage. Props = median properties owned.", "");
 
 L.push("## Top 5 most-picked choices", "");
 L.push("Ties sort by event id. Every `once` event fires in nearly every 468-week run, so counts of 300 are common.", "");
