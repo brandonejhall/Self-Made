@@ -77,6 +77,23 @@ export const CONFIG = {
     burnoutFailureMult: 2,
     failureReputationPenalty: 5,
   },
+  property: {
+    types: [
+      { id: "kgn_studio",  priceUsd: 30000,  weeklyRentUsd: 60 },
+      { id: "kgn_two_bed", priceUsd: 65000,  weeklyRentUsd: 120 },
+      { id: "kgn_house",   priceUsd: 150000, weeklyRentUsd: 260 },
+    ],
+    maxOwned: 3,
+    minDownPaymentPct: 0.2,
+    closingCostPct: 0.03,
+    mortgageAprPct: 9,
+    mortgageTermWeeksOptions: [520, 1040],
+    maintenancePctPerYear: 0.01,
+    vacancyChancePerWeek: 0.015,
+    vacancyWeeks: 6,
+    appreciationPctPerYear: 0.04,
+    sellingCostPct: 0.05,
+  },
   skills: {
     hustleWageCeilingPerPoint: 0.5,
     negotiationAprReductionPerPoint: 0.25,

@@ -4,13 +4,16 @@ import { CONFIG } from "../config";
 import type { GameState, HistoryEntry, Liability } from "../types";
 import { round2, type StepContext } from "../util";
 
+// Reads ctx.next.liabilities so mortgages already settled by propertySystem pass through untouched.
+// Before propertySystem existed, next.liabilities equalled prev.liabilities at this point.
 export function loanRepaymentSystem(ctx: StepContext): StepContext {
   let loanPaymentsUsd = 0;
-  const updated = ctx.prev.liabilities.map((l) => {
+  const updated = ctx.next.liabilities.map((l) => {
+    if (l.kind === "mortgage") return l;
     loanPaymentsUsd += l.weeklyPaymentUsd;
     return { ...l, weeksRemaining: l.weeksRemaining - 1 };
   });
-  const liabilities = updated.filter((l) => l.weeksRemaining > 0);
+  const liabilities = updated.filter((l) => l.kind === "mortgage" || l.weeksRemaining > 0);
   return { ...ctx, loanPaymentsUsd, next: { ...ctx.next, liabilities } };
 }
 
@@ -36,7 +39,8 @@ export function takeLoan(
 
   // Max simultaneous loans check
   const maxLoans = CONFIG.loans.maxSimultaneous[state.wealthTier] ?? 1;
-  if (state.liabilities.length >= maxLoans) {
+  const loanCount = state.liabilities.filter((l) => l.kind !== "mortgage").length;
+  if (loanCount >= maxLoans) {
     return [
       state,
       `Cannot hold more than ${maxLoans} simultaneous loans at tier ${state.wealthTier}`,
