@@ -1,0 +1,362 @@
+[
+  {
+    "id": "shortcut_cash_no_receipt",
+    "stage": 1,
+    "channel": "call",
+    "title": "Mr. Lyn pays cash. No receipt.",
+    "body": "Mr. Lyn runs a wholesale on Princess Street. He wants 300 lunches for his staff party. 'Four hundred US, cash, and we never talk about it.' Invoice it under your name and tax eats a third. He shrugs. 'Your choice. Mine is cash.'",
+    "trigger": { "cities": ["kingston"], "minWeek": 30, "maxAge": 30, "minCashUsd": 1000, "weight": 55, "once": true },
+    "choices": [
+      {
+        "label": "Take the cash. Nothing on paper.",
+        "effects": { "cashUsd": 400, "energy": -15, "addTags": ["cash_deal_no_receipt", "underreported_income"] }
+      },
+      {
+        "label": "Invoice it properly and pay the tax.",
+        "effects": { "cashUsd": 260, "energy": -20, "reputation": 5, "addTags": ["invoiced_lyn_job"] }
+      }
+    ]
+  },
+  {
+    "id": "shortcut_cut_out_partner",
+    "stage": 1,
+    "channel": "email",
+    "title": "The hotel only wants you",
+    "body": "A New Kingston hotel wants a weekend nail and beauty package for guests. Your partner built the client list. The events manager emails you alone: '$600 a weekend. We'd rather deal with one person.' Your partner hasn't seen the email.",
+    "trigger": { "cities": ["kingston"], "minWeek": 52, "maxAge": 30, "requiresTags": ["met_first_partner"], "forbidsTags": ["cut_partner_first"], "weight": 60, "once": true },
+    "choices": [
+      {
+        "label": "Sign it alone. Don't forward the email.",
+        "effects": { "cashUsd": 600, "trust": { "first_partner": -30 }, "addTags": ["cut_out_partner", "cut_partner_first"] }
+      },
+      {
+        "label": "Forward it. Split the $600 down the middle.",
+        "effects": { "cashUsd": 300, "energy": -10, "trust": { "first_partner": 15 }, "addTags": ["shared_hotel_deal"] }
+      }
+    ]
+  },
+  {
+    "id": "shortcut_skip_permit",
+    "stage": 1,
+    "channel": "text",
+    "title": "Trade now, permit later?",
+    "body": "You found a spot by the Half Way Tree clock tower. Foot traffic all day. The trading licence and food handler's permit cost $350 and take three weeks. Clive texts: 'Half the stalls out here don't have one. Just open Saturday.'",
+    "trigger": { "cities": ["kingston"], "minWeek": 26, "maxAge": 30, "minCashUsd": 1500, "weight": 55, "once": true },
+    "choices": [
+      {
+        "label": "Open Saturday. Sort the permit later.",
+        "effects": { "cashUsd": 180, "energy": -10, "addTags": ["skipped_permit"] }
+      },
+      {
+        "label": "Pay the $350 and wait three weeks.",
+        "effects": { "cashUsd": -350, "energy": -5, "reputation": 5, "addTags": ["got_trading_permit"] }
+      }
+    ]
+  },
+  {
+    "id": "shortcut_loan_shark",
+    "stage": 1,
+    "channel": "call",
+    "title": "Bigga can lend you a thousand",
+    "body": "Bigga runs a car wash on Waltham Park Road. Everybody knows what else he runs. 'One thousand US, today. No forms, no credit check. Pay me when you can.' He smiles. Nobody has ever seen the 'when you can' part in writing.",
+    "trigger": { "cities": ["kingston"], "minWeek": 16, "maxAge": 30, "maxCashUsd": 600, "weight": 60, "once": true },
+    "choices": [
+      {
+        "label": "Take Bigga's thousand.",
+        "effects": { "cashUsd": 1000, "addTags": ["took_loan_shark"] }
+      },
+      {
+        "label": "Pick up double shifts instead.",
+        "effects": { "cashUsd": 150, "energy": -25, "addTags": ["refused_loan_shark"] }
+      }
+    ]
+  },
+  {
+    "id": "shortcut_underreport_income",
+    "stage": 1,
+    "channel": "document",
+    "title": "Tax return is due",
+    "body": "Your first proper tax return. You made more this year than ever. Declare it all and you owe $450. Clive's cousin does returns for the whole market. 'Declare half. Everybody does. Nobody checks a small man.' He charges $30.",
+    "trigger": { "cities": ["kingston"], "minWeek": 60, "maxAge": 30, "minCashUsd": 2000, "forbidsTags": ["underreported_income"], "weight": 70, "once": true },
+    "choices": [
+      {
+        "label": "Declare half. Pay the cousin $30.",
+        "effects": { "cashUsd": -255, "addTags": ["underreported_income"] }
+      },
+      {
+        "label": "Declare everything. Pay the $450.",
+        "effects": { "cashUsd": -450, "reputation": 5, "trust": { "halima_yusuf": 5 }, "addTags": ["filed_clean_return"] }
+      }
+    ]
+  },
+  {
+    "id": "shortcut_stolen_stock",
+    "stage": 1,
+    "channel": "text",
+    "title": "Phones off the back of a container",
+    "body": "A youth at Coronation Market has a box of 30 new phones. Sealed. $300 for the lot. They sell for $40 each, easy. 'Container door open by itself down the wharf,' he says, and laughs. The legit wholesaler on Orange Street charges $25 each.",
+    "trigger": { "cities": ["kingston"], "minWeek": 20, "maxAge": 30, "minCashUsd": 1200, "weight": 55, "once": true },
+    "choices": [
+      {
+        "label": "Buy the box. Flip them this week.",
+        "effects": { "cashUsd": 600, "energy": -10, "addTags": ["bought_stolen_stock"] }
+      },
+      {
+        "label": "Buy 30 from Orange Street instead.",
+        "effects": { "cashUsd": 300, "energy": -15, "reputation": 5, "addTags": ["bought_legit_stock"] }
+      }
+    ]
+  },
+  {
+    "id": "shortcut_bribe_queue",
+    "stage": 1,
+    "channel": "call",
+    "title": "Your registration is stuck",
+    "body": "Your business registration has sat nine weeks at the office downtown. A school canteen wants you on contract from Monday. $500 a month, but only if you're registered. The clerk's cousin calls. '$150 and it's signed Friday. Cash. Don't bring it to the counter.'",
+    "trigger": { "cities": ["kingston"], "minWeek": 40, "maxAge": 30, "minCashUsd": 1000, "weight": 50, "once": true },
+    "choices": [
+      {
+        "label": "Pay the $150. Take the contract.",
+        "effects": { "cashUsd": 350, "energy": -5, "addTags": ["paid_bribe"] }
+      },
+      {
+        "label": "Wait in the queue. Lose the canteen.",
+        "effects": { "energy": -10, "reputation": 5, "addTags": ["waited_registration_queue"] }
+      }
+    ]
+  },
+  {
+    "id": "shortcut_forged_valuation",
+    "stage": 1,
+    "channel": "call",
+    "title": "Tobias Wren has a valuer",
+    "body": "Tobias Wren knows about a two-bedroom in Portmore going for $3,000. A buyer in Toronto wants a Kingston house and will pay what the valuation says. 'My valuer writes $6,000. Her bank lends against it. You clear $2,500.' He doesn't ask if you're comfortable.",
+    "trigger": { "cities": ["kingston"], "minWeek": 78, "maxAge": 30, "minCashUsd": 3000, "weight": 50, "once": true },
+    "choices": [
+      {
+        "label": "Let his valuer write $6,000.",
+        "effects": { "cashUsd": 2500, "trust": { "tobias_wren": 10 }, "addTags": ["forged_valuation", "owes_tobias_wren"] }
+      },
+      {
+        "label": "Buy it. Sell at an honest valuation.",
+        "effects": { "cashUsd": 600, "energy": -20, "reputation": 5, "trust": { "tobias_wren": -5 }, "addTags": ["honest_property_flip"] }
+      },
+      {
+        "label": "Pass on the house and on Tobias.",
+        "effects": { "energy": 5, "trust": { "tobias_wren": -10 }, "addTags": ["refused_tobias_flip"] }
+      }
+    ]
+  },
+  {
+    "id": "shortcut_sibling_off_books",
+    "stage": 1,
+    "channel": "text",
+    "title": "Deja wants weekend work",
+    "body": "Deja texts. 'You need help at the stall Saturdays? I'll do it.' Put her on the books and you pay NIS and the paperwork costs you $120 this quarter. Pay her cash in hand and that money stays with you. She doesn't care either way. Yet.",
+    "trigger": { "cities": ["kingston"], "minWeek": 36, "maxAge": 30, "minCashUsd": 800, "weight": 50, "once": true },
+    "choices": [
+      {
+        "label": "Pay her cash in hand. No paperwork.",
+        "effects": { "cashUsd": 120, "trust": { "sibling": 5 }, "addTags": ["paid_sibling_off_books"] }
+      },
+      {
+        "label": "Put her on the books properly.",
+        "effects": { "cashUsd": -120, "energy": -5, "trust": { "sibling": 10 }, "addTags": ["hired_sibling_on_books"] }
+      }
+    ]
+  },
+  {
+    "id": "followup_loan_shark_collects",
+    "stage": 1,
+    "channel": "call",
+    "title": "Bigga's man is at the gate",
+    "body": "A man you don't know leans on your gate at 6 a.m. 'Bigga says hello.' He holds up a phone with a number on it. Your thousand is now $1,900. 'He's a patient man. I'm not. Today, or we talk again Friday.'",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["took_loan_shark"], "minYearsAfterTag": 1, "weight": 200, "once": true },
+    "choices": [
+      {
+        "label": "Pay the full $1,900.",
+        "effects": { "cashUsd": -1900, "energy": -10, "addTags": ["paid_loan_shark"] }
+      },
+      {
+        "label": "Pay $900 now. Promise the rest.",
+        "effects": { "cashUsd": -900, "energy": -20, "reputation": -10, "addTags": ["partial_loan_shark", "took_shady_loan"] }
+      },
+      {
+        "label": "Ask Tobias Wren to make it go away.",
+        "effects": { "cashUsd": -700, "trust": { "tobias_wren": 10 }, "addTags": ["owes_tobias_wren", "tobias_settled_shark"] }
+      }
+    ]
+  },
+  {
+    "id": "followup_partner_sues",
+    "stage": 1,
+    "channel": "document",
+    "title": "A letter from Duke Street",
+    "body": "A law office on Duke Street writes on your old partner's behalf. They claim half of every hotel weekend you ran without them, plus costs. The letter quotes the email you never forwarded. Somebody at the hotel kept a copy.",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["cut_out_partner"], "minYearsAfterTag": 2, "weight": 180, "once": true },
+    "choices": [
+      {
+        "label": "Settle. Pay them $1,200.",
+        "effects": { "cashUsd": -1200, "trust": { "first_partner": 10 }, "addTags": ["settled_partner_suit"] }
+      },
+      {
+        "label": "Fight it in court.",
+        "effects": { "cashUsd": -500, "energy": -25, "reputation": -10, "trust": { "first_partner": -20 }, "addTags": ["fought_partner_suit"] }
+      },
+      {
+        "label": "Let Tobias Wren lean on their lawyer.",
+        "effects": { "cashUsd": -400, "reputation": -5, "trust": { "tobias_wren": 10, "first_partner": -30 }, "addTags": ["owes_tobias_wren", "buried_partner_suit"] }
+      }
+    ]
+  },
+  {
+    "id": "followup_permit_raid",
+    "stage": 1,
+    "channel": "news",
+    "title": "Inspectors sweep Half Way Tree",
+    "body": "Saturday rush. Three municipal inspectors and two police walk the line by the clock tower. Every unlicensed stall gets a padlock and a fine. Yours is fourth. The inspector writes slowly. 'Fine is $400. Stall stays shut until you're licensed.'",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["skipped_permit"], "minYearsAfterTag": 1, "weight": 180, "once": true },
+    "choices": [
+      {
+        "label": "Pay the fine and the $350 permit.",
+        "effects": { "cashUsd": -750, "energy": -10, "addTags": ["fined_permit_raid", "got_trading_permit"] }
+      },
+      {
+        "label": "Slip the inspector $250 to walk on.",
+        "effects": { "cashUsd": -250, "reputation": -10, "addTags": ["paid_bribe", "bribed_inspector"] }
+      },
+      {
+        "label": "Close the stall for good.",
+        "effects": { "cashUsd": -400, "reputation": -10, "energy": 10, "addTags": ["closed_unlicensed_stall"] }
+      }
+    ]
+  },
+  {
+    "id": "followup_tax_audit",
+    "stage": 1,
+    "channel": "document",
+    "title": "The tax office wants your books",
+    "body": "A brown envelope from the tax office. They matched your bank deposits against your returns. The numbers don't line up. Back taxes, interest and a penalty come to $1,400. You have 30 days to pay or to appear with records.",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["underreported_income"], "minYearsAfterTag": 3, "weight": 180, "once": true },
+    "choices": [
+      {
+        "label": "Pay the $1,400.",
+        "effects": { "cashUsd": -1400, "reputation": -5, "addTags": ["paid_tax_audit"] }
+      },
+      {
+        "label": "Agree a payment plan. Penalty grows.",
+        "effects": { "cashUsd": -600, "energy": -15, "reputation": -10, "trust": { "halima_yusuf": -10 }, "addTags": ["tax_payment_plan"] }
+      },
+      {
+        "label": "Hand it to Tobias Wren.",
+        "effects": { "cashUsd": -500, "trust": { "tobias_wren": 10 }, "addTags": ["owes_tobias_wren", "tobias_handled_audit"] }
+      }
+    ]
+  },
+  {
+    "id": "followup_stolen_phones_traced",
+    "stage": 1,
+    "channel": "call",
+    "title": "A detective from Half Way Tree",
+    "body": "Detective Sergeant Morrison calls. Thirty phones from a wharf theft got traced by serial number. Four buyers named you. 'You can come in and talk, or I can come to your stall. Your choice which one the neighbours see.'",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["bought_stolen_stock"], "minYearsAfterTag": 1, "weight": 180, "once": true },
+    "choices": [
+      {
+        "label": "Go in. Refund the buyers yourself.",
+        "effects": { "cashUsd": -800, "reputation": -5, "addTags": ["refunded_stolen_phones"] }
+      },
+      {
+        "label": "Say you didn't know. Hire a lawyer.",
+        "effects": { "cashUsd": -450, "energy": -15, "reputation": -15, "addTags": ["police_file_open"] }
+      },
+      {
+        "label": "Let Tobias Wren talk to Morrison.",
+        "effects": { "cashUsd": -350, "trust": { "tobias_wren": 10 }, "addTags": ["owes_tobias_wren", "tobias_closed_phone_case"] }
+      }
+    ]
+  },
+  {
+    "id": "followup_bribe_clerk_arrested",
+    "stage": 1,
+    "channel": "news",
+    "title": "Registry clerk charged",
+    "body": "Headline on your phone: a clerk at the downtown registry is charged with taking bribes to fast-track files. Police seized her notebook. Clive texts at once. 'Your name in that book?' It is. Next to $150 and a date.",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["paid_bribe"], "minYearsAfterTag": 2, "weight": 150, "once": true },
+    "choices": [
+      {
+        "label": "Give a statement. Admit the $150.",
+        "effects": { "cashUsd": -300, "reputation": -15, "addTags": ["admitted_bribe"] }
+      },
+      {
+        "label": "Hire a lawyer and say nothing.",
+        "effects": { "cashUsd": -700, "energy": -10, "addTags": ["silent_on_bribe"] }
+      }
+    ]
+  },
+  {
+    "id": "followup_forged_valuation_exposed",
+    "stage": 1,
+    "channel": "email",
+    "title": "The Toronto buyer's bank wrote back",
+    "body": "The Toronto buyer missed payments. Her bank sent its own valuer to Portmore. He wrote $3,200. The bank's lawyers want the $2,800 difference from everyone on the sale, or they file a fraud complaint. Your name is on the transfer.",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["forged_valuation"], "minYearsAfterTag": 4, "weight": 200, "once": true },
+    "choices": [
+      {
+        "label": "Pay back the $2,800.",
+        "effects": { "cashUsd": -2800, "reputation": -5, "addTags": ["repaid_forged_valuation"] }
+      },
+      {
+        "label": "Blame the valuer. Let them file.",
+        "effects": { "cashUsd": -600, "reputation": -25, "trust": { "tobias_wren": -15 }, "addTags": ["fraud_complaint_filed"] }
+      },
+      {
+        "label": "Call Tobias. It was his valuer.",
+        "effects": { "cashUsd": -1200, "trust": { "tobias_wren": 10 }, "addTags": ["owes_tobias_wren", "tobias_buried_valuation"] }
+      }
+    ]
+  },
+  {
+    "id": "followup_sibling_injury",
+    "stage": 1,
+    "channel": "call",
+    "title": "Deja burned her hand at the stall",
+    "body": "Hot oil. Deja's at Kingston Public with a bandaged hand. She's off work six weeks. No NIS record means no injury benefit. The bill is $350. Aunt Marcia is on the line too. 'She was working for you. Off the books. Whose fault is that?'",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["paid_sibling_off_books"], "minYearsAfterTag": 1, "weight": 150, "once": true },
+    "choices": [
+      {
+        "label": "Pay the bill and six weeks of her wages.",
+        "effects": { "cashUsd": -650, "trust": { "sibling": 10 }, "addTags": ["covered_sibling_injury"] }
+      },
+      {
+        "label": "Pay the $350 bill only.",
+        "effects": { "cashUsd": -350, "trust": { "sibling": -10 }, "addTags": ["paid_sibling_bill_only"] }
+      },
+      {
+        "label": "Tell her it was her own mistake.",
+        "effects": { "trust": { "sibling": -30 }, "reputation": -10, "addTags": ["blamed_sibling_injury"] }
+      }
+    ]
+  },
+  {
+    "id": "followup_tobias_calls_ledger",
+    "stage": 1,
+    "channel": "call",
+    "title": "Tobias Wren opens his ledger",
+    "body": "Tobias calls on a bad week. He always does. 'One favour. A company needs a Jamaican director for six months. Your name on a form. You never see the money.' He reads you the list of what he's done for you. It takes a while.",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["owes_tobias_wren"], "minYearsAfterTag": 2, "maxCashUsd": 1500, "weight": 200, "once": true },
+    "choices": [
+      {
+        "label": "Sign as director. Ask nothing.",
+        "effects": { "energy": -10, "reputation": -5, "trust": { "tobias_wren": 20 }, "addTags": ["fronted_for_tobias"] }
+      },
+      {
+        "label": "Refuse. Pay him $1,000 to clear the ledger.",
+        "effects": { "cashUsd": -1000, "trust": { "tobias_wren": -10 }, "addTags": ["paid_off_tobias"] }
+      },
+      {
+        "label": "Refuse outright.",
+        "effects": { "reputation": -10, "trust": { "tobias_wren": -40 }, "addTags": ["refused_tobias_ledger"] }
+      }
+    ]
+  }
+]
