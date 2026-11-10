@@ -1,0 +1,92 @@
+// Public API of the simulation. The UI and the balance suite import only from here.
+
+import { CONFIG, type CityId } from "./config";
+import { nextRandom } from "./rng";
+import type { GameState, WeekInput } from "./types";
+
+export type { GameState, WeekInput, HistoryEntry } from "./types";
+export { CONFIG } from "./config";
+
+export function newGame(seed: number, cityId: CityId = "kingston"): GameState {
+  return {
+    version: 1,
+    seed,
+    rngState: seed >>> 0,
+    week: 0,
+    age: CONFIG.start.age,
+    cityId,
+    cashUsd: CONFIG.start.cashUsd,
+    energy: CONFIG.start.energy,
+    reputation: CONFIG.start.reputation,
+    history: [],
+    flags: {},
+  };
+}
+
+export function validateInput(input: WeekInput): string | null {
+  const { work, hustle, rest } = input.hours;
+  if ([work, hustle, rest].some((h) => h < 0)) return "Hours cannot be negative";
+  if (work + hustle + rest > CONFIG.time.hoursPerWeek) {
+    return `Total hours exceed ${CONFIG.time.hoursPerWeek}`;
+  }
+  return null;
+}
+
+// Advance one week. Pure: returns a new state and never mutates the input.
+export function step(state: GameState, input: WeekInput): GameState {
+  const error = validateInput(input);
+  if (error) throw new Error(error);
+
+  const city = CONFIG.cities[state.cityId];
+  const { work, hustle, rest } = input.hours;
+
+  const [roll, rngState] = nextRandom(state.rngState);
+  const hustleRate =
+    city.hustleHourlyMinUsd + roll * (city.hustleHourlyMaxUsd - city.hustleHourlyMinUsd);
+
+  const income = work * city.baseHourlyWageUsd + hustle * hustleRate;
+  const costs = city.weeklyRentUsd + city.weeklyLivingCostUsd;
+
+  const energy = clamp(
+    state.energy +
+      rest * CONFIG.energy.restRecoveryPerHour -
+      work * CONFIG.energy.workCostPerHour -
+      hustle * CONFIG.energy.hustleCostPerHour,
+    0,
+    CONFIG.energy.max,
+  );
+
+  const week = state.week + 1;
+  return {
+    ...state,
+    rngState,
+    week,
+    age: CONFIG.start.age + Math.floor(week / CONFIG.time.weeksPerYear),
+    cashUsd: round2(state.cashUsd + income - costs),
+    energy: round2(energy),
+    history: state.history,
+    flags: state.flags,
+  };
+}
+
+export function netWorthUsd(state: GameState): number {
+  return state.cashUsd;
+}
+
+export function serialize(state: GameState): string {
+  return JSON.stringify(state);
+}
+
+export function deserialize(json: string): GameState {
+  const parsed = JSON.parse(json) as GameState;
+  if (parsed.version !== 1) throw new Error(`Unsupported save version ${parsed.version}`);
+  return parsed;
+}
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, n));
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}

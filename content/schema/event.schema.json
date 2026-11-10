@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Self Made event",
+  "type": "object",
+  "required": ["id", "stage", "title", "body", "trigger", "choices"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "stage": { "type": "integer", "minimum": 1, "maximum": 3 },
+    "channel": { "enum": ["text", "news", "call", "document", "email", "briefing"] },
+    "title": { "type": "string", "maxLength": 60 },
+    "body": { "type": "string", "maxLength": 420 },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cities": { "type": "array", "items": { "type": "string" } },
+        "minAge": { "type": "integer" },
+        "maxAge": { "type": "integer" },
+        "minCashUsd": { "type": "number" },
+        "maxCashUsd": { "type": "number" },
+        "minWeek": { "type": "integer" },
+        "requiresTags": { "type": "array", "items": { "type": "string" } },
+        "forbidsTags": { "type": "array", "items": { "type": "string" } },
+        "minYearsAfterTag": { "type": "number" },
+        "weight": { "type": "number", "minimum": 0 },
+        "once": { "type": "boolean" }
+      }
+    },
+    "choices": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["label", "effects"],
+        "additionalProperties": false,
+        "properties": {
+          "label": { "type": "string", "maxLength": 70 },
+          "effects": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "cashUsd": { "type": "number" },
+              "energy": { "type": "number" },
+              "reputation": { "type": "number" },
+              "trust": {
+                "type": "object",
+                "additionalProperties": { "type": "number" }
+              },
+              "addTags": { "type": "array", "items": { "type": "string" } },
+              "setFlags": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

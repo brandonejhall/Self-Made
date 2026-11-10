@@ -1,0 +1,24 @@
+[
+  {
+    "id": "grandmother_shoebox",
+    "stage": 1,
+    "channel": "document",
+    "title": "Grandma's shoebox",
+    "body": "Your aunt hands you a shoebox from Grandma's room. Old photos. A land deed dated 1978. A letter in your grandfather's handwriting about \"a share that will make this family whole.\" It names a bank in Zurich and a box number.",
+    "trigger": { "minWeek": 96, "maxAge": 23, "weight": 100, "once": true },
+    "choices": [
+      {
+        "label": "Keep everything. Read the letter again tonight.",
+        "effects": { "energy": -5, "addTags": ["has_shoebox", "read_letter"], "setFlags": ["mystery_zurich_open"] }
+      },
+      {
+        "label": "Pay a lawyer $300 to look at the deed.",
+        "effects": { "cashUsd": -300, "addTags": ["has_shoebox", "deed_checked"], "setFlags": ["mystery_zurich_open", "knows_meridian_name"] }
+      },
+      {
+        "label": "Leave the box with your aunt.",
+        "effects": { "energy": 5, "addTags": ["left_shoebox"] }
+      }
+    ]
+  }
+]

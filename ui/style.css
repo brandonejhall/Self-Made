@@ -1,0 +1,32 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #0d0d0f;
+  color: #f2f2f2;
+}
+
+.phone {
+  max-width: 390px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+.cash {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 8px 0;
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  border: 0;
+  border-radius: 12px;
+  background: #f2f2f2;
+  color: #0d0d0f;
+}
