@@ -108,6 +108,28 @@ Every agent reads this first and updates it last.
 - `sim/index.ts` `step()` updated: `city.weeklyRentUsd` replaced with `CONFIG.cities.kingston.housingTiers[0].weeklyRentUsd` as a placeholder pending SM-006 (housing system).
 - `tests/sim/config.test.ts` added with 15 tests covering every acceptance criterion.
 
+## SM-014 changes
+
+- `ui/main.ts`: Net worth chart and history log screens added.
+  - `nwHistory: number[]` stored to localStorage (`self-made-nw`). One entry pushed after every `step()` call (before events resolve). Loaded on startup.
+  - `renderChart()`: inline SVG line chart. Auto-scaling Y axis. Dashed tier lines at $10K (green) and $1M (yellow) when in range. X-axis ticks at start/mid/end. Short label formatter ($K/$M). Falls back to empty-state text before first week.
+  - `renderHistoryLog()`: reverse-chronological list of `state.history`. Week label + action string + tag pills per entry. Scrollable.
+  - Two nav icon buttons in the home header (▲ for chart, ☰ for history). Each has a back button to return home.
+  - `showScreen` signature extended to include the two new screen ids.
+- `ui/style.css`: Added `.btn-icon`, `.header-actions`, `.chart-*`, `.history-*`, `.tag-pill` styles. All match dark theme.
+- `npm run build` clean. 169 tests green.
+
+## SM-013 changes
+
+- `ui/main.ts`: Event card screen added.
+  - Imports all 7 event JSON files via Vite JSON import at module top level.
+  - `loadEvents()`, `applyEvent()` imported directly from `sim/index.ts` (no shims needed — SM-008 exported them).
+  - `step()` now called with `EVENTS` as third argument so `selectEvents()` runs inside `step()`.
+  - `advanceWeek()` reads `pendingEvents` from `step()` return; if non-empty, routes to `screen-event` and renders first card.
+  - `resolveEvent()` calls `applyEvent()`, pops queue, shows next card or returns home.
+  - `screen-event` div added to DOM with channel chip, title, body, choices container.
+- `ui/style.css`: `.event-card`, `.event-channel`, `.event-title`, `.event-body`, `.event-choices` added.
+
 ## SM-012 changes
 
 - `ui/main.ts`: Full phone UI. Two screens: Home (cash, energy bar, rep/age/year/week stats, cash+energy delta from previous week) and Hour Allocator (5 stepper fields: work/hustle/rest/study/side-project, skill selector, Advance Week button disabled until total = 100). `advanceWeek()` sends all 6 `WeekInput` fields and destructures `{ state: newState }` from `step()`. Save/load via `serialize`/`deserialize` to localStorage. First load calls `newGame(Date.now() >>> 0, 'kingston')`.

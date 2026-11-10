@@ -22,46 +22,6 @@ The pm agent owns this file. Other agents add items only under "Requested".
 
 ---
 
-## SM-013: Wire event cards to UI
-
-**Owner:** ui-engineer
-**Depends on:** SM-012
-**Status:** Ready
-
-### What
-When `step()` returns pending events, the UI must display them as full-screen event cards before returning to the home screen. Each card shows the event channel icon, title, body text, and 2–4 choice buttons. After the player chooses, `applyEvent()` is called, state is updated and saved, and the next event card is shown (if more than one event fired this week). After all events are resolved the player returns to the home screen showing the final post-event state.
-
-### Acceptance criteria
-- [ ] After calling `step()`, if any events are returned they are displayed as cards before showing the home screen
-- [ ] Each event card shows: a channel label (text / news / call / document / email / briefing), the event title, the event body, and one button per choice
-- [ ] Selecting a choice calls `applyEvent(state, eventId, choiceIndex, events)` and saves the resulting state to localStorage
-- [ ] If two events fire in one week, the second card is shown after the first choice is confirmed
-- [ ] The player cannot skip an event (the Advance Week button is hidden while events are pending)
-- [ ] On the `grandmother_shoebox` event, the channel label displays "document"
-- [ ] All event text is sourced from the event JSON loaded at startup; no event text is hardcoded in the UI
-
----
-
-## SM-014: Net worth tracker and history log screens
-
-**Owner:** ui-engineer
-**Depends on:** SM-013
-**Status:** Ready
-
-### What
-Two secondary screens complete the vertical slice UI. The Net Worth Tracker shows a line chart of `netWorthUsd()` over all weeks played, with wealth tier thresholds ($10,000 and $1,000,000) marked as horizontal rules. The History Log shows all `HistoryEntry` items in reverse chronological order, with each entry showing its week, action string, and tag pills. These screens do not advance game state; they are read-only views.
-
-### Acceptance criteria
-- [ ] Net worth tracker renders a line chart with one data point per week played, x-axis in weeks, y-axis in USD
-- [ ] Horizontal lines on the chart mark $10,000 (Tier 1 threshold) and $1,000,000 (Tier 2 / Stage 2 threshold) in a visually distinct color
-- [ ] The chart updates after each week advance
-- [ ] History log shows all `state.history` entries newest first, each with week number, action label, and tag chips
-- [ ] History log is scrollable and renders correctly at 390px viewport width
-- [ ] Both screens are reachable from the home screen via navigation and return to the home screen on back
-- [ ] `npm run build` produces a deployable `dist/` with no build errors
-
----
-
 ## In progress
 
 ---
@@ -86,6 +46,8 @@ See `docs/STATE.md` for detailed change logs per ticket.
 | SM-010 | Implement job system in step() | sim-engineer |
 | SM-011 | Implement headless balance suite | balance-qa |
 | SM-012 | Wire sim to phone UI — week screen and hour allocator | ui-engineer |
+| SM-013 | Wire event cards to UI | ui-engineer |
+| SM-014 | Net worth tracker and history log screens | ui-engineer |
 
 ---
 
