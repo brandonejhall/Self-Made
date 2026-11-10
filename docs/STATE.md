@@ -13,6 +13,20 @@ Every agent reads this first and updates it last.
 
 - Nothing.
 
+## SM-006 changes
+
+- `sim/index.ts` `step()`: rent line updated to use `CONFIG.cities.kingston.housingTiers[state.housingTier]!.weeklyRentUsd` instead of the placeholder tier-0 constant (removes the TODO comment).
+- `sim/index.ts` `step()`: eviction logic added after loan processing. After computing `newCashAfterAll`:
+  - If `newCashAfterAll < CONFIG.progression.overdueCashFloor` (0), `overdueWeeks` increments; otherwise resets to 0.
+  - If `overdueWeeks >= CONFIG.progression.evictionOverdueCount` (2): `housingTier` resets to 0, `overdueWeeks` resets to 0, an `evicted` history entry is appended, `trust['halima_yusuf']` decreases by 20, and a forced repayment `Liability` (`eviction_repay_<week>`, principal = 2 weeks back-rent, $20/week) is added to `liabilities`.
+  - `step()` now returns `overdueWeeks`, `housingTier`, `trust`, `history`, and `liabilities` with these updated values.
+- `sim/index.ts` exports new `moveHousing(state, newTier): [GameState, string | null]`:
+  - Returns error when `newTier` is out of bounds.
+  - Returns error when `cashUsd < cashRequiredUsd` for the target tier.
+  - Returns error when `cashUsd < depositUsd` for the target tier.
+  - On success: deducts deposit, sets `housingTier = newTier`, returns new state.
+- `tests/sim/housing.test.ts` added with 17 tests covering all acceptance criteria.
+
 ## SM-005 changes
 
 - `sim/index.ts` exports `takeLoan(state, amount, termWeeks): [GameState, string | null]`:

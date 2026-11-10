@@ -96,8 +96,8 @@ export function step(state: GameState, input: WeekInput): GameState {
   const income =
     work * city.baseHourlyWageUsd * productivityMult + hustle * hustleRate * productivityMult;
 
-  // TODO SM-006: use state.housingTier to select the correct rent tier
-  const costs = CONFIG.cities.kingston.housingTiers[0].weeklyRentUsd + city.weeklyLivingCostUsd;
+  const rent = CONFIG.cities.kingston.housingTiers[state.housingTier]!.weeklyRentUsd;
+  const costs = rent + city.weeklyLivingCostUsd;
 
   // Process loan repayments
   let loanPayments = 0;
@@ -107,6 +107,48 @@ export function step(state: GameState, input: WeekInput): GameState {
   });
   const remainingLiabilities = updatedLiabilities.filter((l) => l.weeksRemaining > 0);
   const totalCosts = costs + loanPayments;
+
+  // --- Eviction check ---
+  const newCashAfterAll = round2(state.cashUsd + income - totalCosts);
+
+  let overdueWeeks = state.overdueWeeks;
+  let housingTier = state.housingTier;
+  let trust = { ...state.trust };
+  let postStepLiabilities = [...remainingLiabilities];
+  let stepHistory: HistoryEntry[] = [...state.history];
+
+  if (newCashAfterAll < CONFIG.progression.overdueCashFloor) {
+    overdueWeeks += 1;
+  } else {
+    overdueWeeks = 0;
+  }
+
+  if (overdueWeeks >= CONFIG.progression.evictionOverdueCount) {
+    const overdueRent =
+      CONFIG.cities.kingston.housingTiers[state.housingTier]!.weeklyRentUsd * 2;
+    const forcedWeeks = Math.ceil(
+      overdueRent / CONFIG.progression.evictionForcedRepayPerWeek,
+    );
+    stepHistory = [
+      ...stepHistory,
+      { week: state.week + 1, action: "evicted", tags: ["evicted"] },
+    ];
+    trust = {
+      ...trust,
+      halima_yusuf: (trust["halima_yusuf"] ?? 0) - 20,
+    };
+    postStepLiabilities = [
+      ...postStepLiabilities,
+      {
+        id: `eviction_repay_${state.week + 1}`,
+        principalUsd: overdueRent,
+        weeklyPaymentUsd: CONFIG.progression.evictionForcedRepayPerWeek,
+        weeksRemaining: forcedWeeks,
+      },
+    ];
+    housingTier = 0;
+    overdueWeeks = 0;
+  }
 
   // Recovery is halved while burnout_active
   const recoveryMult = state.flags.burnout_active ? CONFIG.energy.burnoutRecoveryMult : 1;
@@ -142,13 +184,16 @@ export function step(state: GameState, input: WeekInput): GameState {
     rngState,
     week,
     age: CONFIG.start.age + Math.floor(week / CONFIG.time.weeksPerYear),
-    cashUsd: round2(state.cashUsd + income - totalCosts),
+    cashUsd: newCashAfterAll,
     energy: round2(newEnergy),
     burnoutWeeks: finalBurnoutWeeks,
-    history: state.history,
+    history: stepHistory,
     flags,
     skills: newSkills,
-    liabilities: remainingLiabilities,
+    liabilities: postStepLiabilities,
+    overdueWeeks,
+    housingTier,
+    trust,
   };
 }
 
@@ -226,6 +271,31 @@ export function takeLoan(
       cashUsd: round2(state.cashUsd + amount),
       liabilities: [...state.liabilities, liability],
       history: newHistory,
+    },
+    null,
+  ];
+}
+
+export function moveHousing(
+  state: GameState,
+  newTier: number,
+): [GameState, string | null] {
+  const tiers = CONFIG.cities.kingston.housingTiers;
+  if (newTier < 0 || newTier >= tiers.length) {
+    return [state, `Invalid housing tier ${newTier}`];
+  }
+  const tier = tiers[newTier]!;
+  if (state.cashUsd < tier.cashRequiredUsd) {
+    return [state, `Need $${tier.cashRequiredUsd} cash to access tier ${newTier}`];
+  }
+  if (state.cashUsd < tier.depositUsd) {
+    return [state, `Need $${tier.depositUsd} for deposit`];
+  }
+  return [
+    {
+      ...state,
+      cashUsd: round2(state.cashUsd - tier.depositUsd),
+      housingTier: newTier,
     },
     null,
   ];
