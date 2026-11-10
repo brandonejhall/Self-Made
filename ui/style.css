@@ -483,3 +483,228 @@ button {
   text-align: center;
   padding: 40px 16px;
 }
+
+/* ── Home app grid (SM-023) ──────────────────────────────────────────────── */
+
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.app-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 0;
+  color: #f2f2f2;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.app-tile__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #18181b;
+  border: 1px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.app-tile:active .app-tile__icon {
+  background: #2a2a2e;
+}
+
+.app-tile__name {
+  font-size: 0.75rem;
+  color: #ccc;
+}
+
+.app-tile--soon .app-tile__icon {
+  opacity: 0.4;
+  border-style: dashed;
+}
+
+.app-tile__soon {
+  position: absolute;
+  top: 0;
+  right: 6px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #0d0d0f;
+  background: #fbbf24;
+  border-radius: 20px;
+  padding: 1px 6px;
+}
+
+/* ── Phone app screen (SM-023) ───────────────────────────────────────────── */
+
+.app-cash {
+  margin-left: auto;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ccc;
+}
+
+.app-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.app-card {
+  background: #18181b;
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.875rem;
+}
+
+.kv__label {
+  color: #888;
+  flex-shrink: 0;
+}
+
+.kv__value {
+  font-weight: 600;
+  text-align: right;
+}
+
+.kv__value--warn { color: #f87171; }
+.kv__value--good { color: #4ade80; }
+
+.req {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.req__mark {
+  font-size: 0.62rem;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+.req--met .req__mark   { background: #4ade80; color: #0d0d0f; }
+.req--unmet .req__mark { background: #f87171; color: #0d0d0f; }
+.req--unmet            { color: #ccc; }
+
+.app-note {
+  font-size: 0.78rem;
+  color: #888;
+  line-height: 1.4;
+}
+
+.app-empty {
+  color: #888;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Flash message after an action: sim success or sim error string */
+.app-flash {
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.app-flash--ok    { background: #14301e; color: #4ade80; }
+.app-flash--error { background: #3a1616; color: #f87171; }
+
+/* ── Action buttons and confirm panel ────────────────────────────────────── */
+
+.action {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.action__blocked {
+  font-size: 0.78rem;
+  color: #f87171;
+}
+
+.btn-action,
+.btn-secondary {
+  width: 100%;
+  padding: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.btn-action {
+  border: 0;
+  background: #f2f2f2;
+  color: #0d0d0f;
+}
+
+.btn-secondary {
+  border: 1px solid #333;
+  background: #2a2a2e;
+  color: #f2f2f2;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #0d0d0f;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.confirm__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.confirm__buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
