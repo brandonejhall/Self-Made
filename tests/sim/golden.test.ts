@@ -1,5 +1,7 @@
 // SM-015 golden master. Values captured from the pre-refactor sim/index.ts (commit 31981f9).
 // Any change here means sim behavior changed. A pure refactor must leave this green.
+// SM-017 re-recorded policy A: business failure draws (1 per owned business per week) shift the
+// RNG; the food stall fails at week 86 and is relaunched. Policy B never owns a business: unchanged.
 import { describe, expect, it } from "vitest";
 import { ALL_EVENTS, POLICY_A, POLICY_B, runGolden } from "./golden.helpers";
 
@@ -12,15 +14,15 @@ describe("golden runs (468 weeks)", () => {
     expect(runGolden(12345, 468, POLICY_A)).toEqual({
       "week": 468,
       "age": 30,
-      "cashUsd": 147437.18,
+      "cashUsd": 145246.45,
       "energy": 100,
       "reputation": 100,
-      "netWorthUsd": 148437.18,
+      "netWorthUsd": 146246.45,
       "wealthTier": 1,
       "housingTier": 1,
       "activeJobId": "full_time",
-      "rngState": 2154614940,
-      "historyLength": 46,
+      "rngState": 2237039534,
+      "historyLength": 48,
       "firedEventsCount": 35,
       "eventsShown": 35,
       "assetsCount": 1,
@@ -35,7 +37,7 @@ describe("golden runs (468 weeks)", () => {
         "owns_portmore_plot": true,
         "mystery_zurich_open": true
       },
-      "stateHash": "4e6b8aff"
+      "stateHash": "917250b9"
     });
   });
 

@@ -47,6 +47,11 @@ export interface Asset {
   type: string;
   bookValueUsd: number;
   weeklyIncomeUsd?: number; // for businesses / rental
+  // SM-017 business growth. Set on assets created by launchBusiness.
+  kind?: string; // "business" for launched businesses
+  stage?: number; // 1 to 4
+  weeksAtStage?: number;
+  reinvestedAtStageUsd?: number;
 }
 
 export interface Liability {
