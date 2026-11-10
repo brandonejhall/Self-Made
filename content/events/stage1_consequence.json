@@ -4,7 +4,7 @@
     "stage": 1,
     "channel": "call",
     "title": "Debt collector is at your door",
-    "body": "A man in a white shirt says he's from Maxfield Recovery Services. You owe the original principal plus two years of interest. He has a printed sheet. If you don't settle today he'll be back with paperwork and a witness. He looks like he means it.",
+    "body": "A man in a white shirt says he's from Maxfield Recovery Services. Bigga sold them the rest of your debt. You owe it plus two years of interest. He has a printed sheet. If you don't settle today he'll be back with paperwork and a witness. He looks like he means it.",
     "trigger": { "cities": ["kingston"], "requiresTags": ["took_shady_loan"], "minYearsAfterTag": 2, "weight": 200, "once": true },
     "choices": [
       {

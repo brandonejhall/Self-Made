@@ -40,16 +40,16 @@
     "stage": 1,
     "channel": "text",
     "title": "Trade now, permit later?",
-    "body": "You found a spot by the Half Way Tree clock tower. Foot traffic all day. The trading licence and food handler's permit cost $350 and take three weeks. Clive texts: 'Half the stalls out here don't have one. Just open Saturday.'",
+    "body": "You found a spot by the Half Way Tree clock tower. Foot traffic all day. The trading licence and food handler's permit cost $150 and take three weeks. Clive texts: 'Half the stalls out here don't have one. Just open Saturday.'",
     "trigger": { "cities": ["kingston"], "minWeek": 26, "maxAge": 30, "minCashUsd": 1500, "weight": 55, "once": true },
     "choices": [
       {
         "label": "Open Saturday. Sort the permit later.",
-        "effects": { "cashUsd": 180, "energy": -10, "addTags": ["skipped_permit"] }
+        "effects": { "cashUsd": 250, "energy": -10, "reputation": -5, "addTags": ["skipped_permit"] }
       },
       {
-        "label": "Pay the $350 and wait three weeks.",
-        "effects": { "cashUsd": -350, "energy": -5, "reputation": 5, "addTags": ["got_trading_permit"] }
+        "label": "Pay the $150 and wait three weeks.",
+        "effects": { "cashUsd": -150, "energy": -5, "reputation": 5, "addTags": ["got_trading_permit"] }
       }
     ]
   },
@@ -59,7 +59,7 @@
     "channel": "call",
     "title": "Bigga can lend you a thousand",
     "body": "Bigga runs a car wash on Waltham Park Road. Everybody knows what else he runs. 'One thousand US, today. No forms, no credit check. Pay me when you can.' He smiles. Nobody has ever seen the 'when you can' part in writing.",
-    "trigger": { "cities": ["kingston"], "minWeek": 16, "maxAge": 30, "maxCashUsd": 600, "weight": 60, "once": true },
+    "trigger": { "cities": ["kingston"], "minWeek": 16, "maxAge": 30, "maxCashUsd": 2500, "forbidsTags": ["took_loan_shark", "refused_loan_shark"], "weight": 60, "once": true },
     "choices": [
       {
         "label": "Take Bigga's thousand.",
@@ -72,20 +72,38 @@
     ]
   },
   {
+    "id": "shortcut_loan_shark_bank_debt",
+    "stage": 1,
+    "channel": "call",
+    "title": "Bigga heard about your bank loan",
+    "body": "Bigga leans out of the car wash office on Waltham Park Road. 'Bank have you on a weekly payment, I hear. Take a thousand from me. Breathe a little.' No forms. No rate. Everybody knows how Bigga collects.",
+    "trigger": { "cities": ["kingston"], "minWeek": 16, "maxAge": 30, "minCashUsd": 2501, "requiresTags": ["took_loan"], "forbidsTags": ["took_loan_shark", "refused_loan_shark"], "weight": 60, "once": true },
+    "choices": [
+      {
+        "label": "Take Bigga's thousand.",
+        "effects": { "cashUsd": 1000, "addTags": ["took_loan_shark"] }
+      },
+      {
+        "label": "Keep paying the bank. Work extra shifts.",
+        "effects": { "cashUsd": 150, "energy": -25, "addTags": ["refused_loan_shark"] }
+      }
+    ]
+  },
+  {
     "id": "shortcut_underreport_income",
     "stage": 1,
     "channel": "document",
     "title": "Tax return is due",
-    "body": "Your first proper tax return. You made more this year than ever. Declare it all and you owe $450. Clive's cousin does returns for the whole market. 'Declare half. Everybody does. Nobody checks a small man.' He charges $30.",
+    "body": "Your first proper tax return. Declare it all and you owe $110. Clive's cousin does returns for the whole market. 'Declare half. Nobody checks a small man.' He charges $30. Halima at the bank will see the smaller number when you ask for credit.",
     "trigger": { "cities": ["kingston"], "minWeek": 60, "maxAge": 30, "minCashUsd": 2000, "forbidsTags": ["underreported_income"], "weight": 70, "once": true },
     "choices": [
       {
         "label": "Declare half. Pay the cousin $30.",
-        "effects": { "cashUsd": -255, "addTags": ["underreported_income"] }
+        "effects": { "cashUsd": -85, "energy": -10, "trust": { "halima_yusuf": -20 }, "addTags": ["underreported_income"] }
       },
       {
-        "label": "Declare everything. Pay the $450.",
-        "effects": { "cashUsd": -450, "reputation": 5, "trust": { "halima_yusuf": 5 }, "addTags": ["filed_clean_return"] }
+        "label": "Declare everything. Pay the $110.",
+        "effects": { "cashUsd": -110, "addTags": ["filed_clean_return"] }
       }
     ]
   },
@@ -152,16 +170,16 @@
     "stage": 1,
     "channel": "text",
     "title": "Deja wants weekend work",
-    "body": "Deja texts. 'You need help at the stall Saturdays? I'll do it.' Put her on the books and you pay NIS and the paperwork costs you $120 this quarter. Pay her cash in hand and that money stays with you. She doesn't care either way. Yet.",
+    "body": "Deja texts. 'You need help at the stall Saturdays? I'll do it.' Her Saturdays will clear you $150 a quarter. Put her on the books and NIS and paperwork take $60 of it. She doesn't care either way. Yet.",
     "trigger": { "cities": ["kingston"], "minWeek": 36, "maxAge": 30, "minCashUsd": 800, "weight": 50, "once": true },
     "choices": [
       {
         "label": "Pay her cash in hand. No paperwork.",
-        "effects": { "cashUsd": 120, "trust": { "sibling": 5 }, "addTags": ["paid_sibling_off_books"] }
+        "effects": { "cashUsd": 150, "reputation": -5, "addTags": ["paid_sibling_off_books"] }
       },
       {
         "label": "Put her on the books properly.",
-        "effects": { "cashUsd": -120, "energy": -5, "trust": { "sibling": 10 }, "addTags": ["hired_sibling_on_books"] }
+        "effects": { "cashUsd": 90, "energy": -5, "trust": { "sibling": 10 }, "addTags": ["hired_sibling_on_books"] }
       }
     ]
   },
@@ -178,8 +196,8 @@
         "effects": { "cashUsd": -1900, "energy": -10, "addTags": ["paid_loan_shark"] }
       },
       {
-        "label": "Pay $900 now. Promise the rest.",
-        "effects": { "cashUsd": -900, "energy": -20, "reputation": -10, "addTags": ["partial_loan_shark", "took_shady_loan"] }
+        "label": "Pay $600 now. Promise the rest.",
+        "effects": { "cashUsd": -600, "energy": -20, "reputation": -10, "addTags": ["partial_loan_shark", "took_shady_loan"] }
       },
       {
         "label": "Ask Tobias Wren to make it go away.",
@@ -218,8 +236,8 @@
     "trigger": { "cities": ["kingston"], "requiresTags": ["skipped_permit"], "minYearsAfterTag": 1, "weight": 180, "once": true },
     "choices": [
       {
-        "label": "Pay the fine and the $350 permit.",
-        "effects": { "cashUsd": -750, "energy": -10, "addTags": ["fined_permit_raid", "got_trading_permit"] }
+        "label": "Pay the fine and the $150 permit.",
+        "effects": { "cashUsd": -550, "energy": -10, "addTags": ["fined_permit_raid", "got_trading_permit"] }
       },
       {
         "label": "Slip the inspector $250 to walk on.",
