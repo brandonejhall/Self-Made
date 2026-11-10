@@ -110,6 +110,8 @@ export const CONFIG = {
     overdueCashFloor: 0,
     evictionOverdueCount: 2,
     evictionForcedRepayPerWeek: 20,
+    stage1EndWeek: 468, // GDD 15.1: run ends at age 30 (9 years x 52 weeks)
+    summaryTopChoices: 5,
   },
   events: {
     maxPerWeek: 2,

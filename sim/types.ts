@@ -95,6 +95,27 @@ export interface GameState {
   wealthTier: number;
   activeJobId: string | null;
   underHoursWeeks: number;
+  // SM-020 end of run. deserialize fills these for saves made before SM-020.
+  stage1Complete: boolean;
+  summary: Stage1Summary | null;
+  choiceLog: ChoiceLogEntry[];
+  maxWealthTier: number; // highest wealthTier held at any step
+}
+
+// One resolved event choice and its net worth effect (GDD 15.1).
+export interface ChoiceLogEntry {
+  week: number;
+  eventId: string;
+  choiceIndex: number;
+  netWorthDeltaUsd: number; // netWorthUsd(after applyEvent) - netWorthUsd(before)
+}
+
+// Age-30 summary, set by step() when the run reaches CONFIG.progression.stage1EndWeek.
+export interface Stage1Summary {
+  finalNetWorthUsd: number;
+  wealthTierReached: number;
+  topChoices: ChoiceLogEntry[];
+  consequencesFired: string[];
 }
 
 export interface WeekInput {

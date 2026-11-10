@@ -70,8 +70,20 @@ for await (const raw of rl) {
     continue;
   }
 
-  for (let i = 0; i < weeks; i++) ({ state } = step(state, last));
+  for (let i = 0; i < weeks && !state.stage1Complete; i++) ({ state } = step(state, last));
+  if (state.stage1Complete) break;
   prompt();
+}
+
+if (state.summary) {
+  const s = state.summary;
+  console.log(`\nAge 30. Stage 1 complete.`);
+  console.log(`Final net worth ${usd(s.finalNetWorthUsd)} | Wealth tier reached ${s.wealthTierReached}`);
+  console.log(`Top choices:`);
+  for (const c of s.topChoices) {
+    console.log(`  week ${c.week}  ${c.eventId} (choice ${c.choiceIndex})  ${c.netWorthDeltaUsd >= 0 ? "+" : "-"}${usd(Math.abs(c.netWorthDeltaUsd))}`);
+  }
+  console.log(`Consequences fired: ${s.consequencesFired.length ? s.consequencesFired.join(", ") : "none"}`);
 }
 
 console.log(`Final: ${status(state)}`);
