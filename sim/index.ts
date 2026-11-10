@@ -6,6 +6,7 @@ import type { GameState, WeekInput } from "./types";
 
 export type { GameState, WeekInput, HistoryEntry, Asset, Liability } from "./types";
 export { CONFIG } from "./config";
+import type { HistoryEntry, Liability } from "./types";
 
 export function newGame(seed: number, cityId: CityId = "kingston"): GameState {
   return {
@@ -98,6 +99,15 @@ export function step(state: GameState, input: WeekInput): GameState {
   // TODO SM-006: use state.housingTier to select the correct rent tier
   const costs = CONFIG.cities.kingston.housingTiers[0].weeklyRentUsd + city.weeklyLivingCostUsd;
 
+  // Process loan repayments
+  let loanPayments = 0;
+  const updatedLiabilities = state.liabilities.map((l) => {
+    loanPayments += l.weeklyPaymentUsd;
+    return { ...l, weeksRemaining: l.weeksRemaining - 1 };
+  });
+  const remainingLiabilities = updatedLiabilities.filter((l) => l.weeksRemaining > 0);
+  const totalCosts = costs + loanPayments;
+
   // Recovery is halved while burnout_active
   const recoveryMult = state.flags.burnout_active ? CONFIG.energy.burnoutRecoveryMult : 1;
   const recovery = rest * CONFIG.energy.restRecoveryPerHour * recoveryMult;
@@ -132,12 +142,13 @@ export function step(state: GameState, input: WeekInput): GameState {
     rngState,
     week,
     age: CONFIG.start.age + Math.floor(week / CONFIG.time.weeksPerYear),
-    cashUsd: round2(state.cashUsd + income - costs),
+    cashUsd: round2(state.cashUsd + income - totalCosts),
     energy: round2(newEnergy),
     burnoutWeeks: finalBurnoutWeeks,
     history: state.history,
     flags,
     skills: newSkills,
+    liabilities: remainingLiabilities,
   };
 }
 
@@ -158,6 +169,66 @@ export function effectiveHustleCeiling(state: GameState): number {
     city.hustleHourlyMaxUsd + CONFIG.skills.hustleWageCeilingPerPoint * (state.skills["hustle"] ?? 0),
     city.hustleAbsoluteCeiling,
   );
+}
+
+export function takeLoan(
+  state: GameState,
+  amount: number,
+  termWeeks: number,
+): [GameState, string | null] {
+  // Eligibility: reputation must be >= CONFIG.loans.minReputation
+  // UNLESS cash <= CONFIG.loans.emergencyMinCash (emergency override)
+  const isEmergency = state.cashUsd <= CONFIG.loans.emergencyMinCash;
+  if (!isEmergency && state.reputation < CONFIG.loans.minReputation) {
+    return [
+      state,
+      `Reputation ${state.reputation} below minimum ${CONFIG.loans.minReputation}`,
+    ];
+  }
+
+  // Max simultaneous loans check
+  const maxLoans = CONFIG.loans.maxSimultaneous[state.wealthTier] ?? 1;
+  if (state.liabilities.length >= maxLoans) {
+    return [
+      state,
+      `Cannot hold more than ${maxLoans} simultaneous loans at tier ${state.wealthTier}`,
+    ];
+  }
+
+  // Compute weekly payment using amortization formula
+  const apr = effectiveLoanApr(state);
+  const weeklyRate = apr / 52 / 100;
+  let weeklyPayment: number;
+  if (weeklyRate === 0) {
+    weeklyPayment = Math.round((amount / termWeeks) * 100) / 100;
+  } else {
+    weeklyPayment =
+      Math.round(
+        ((amount * weeklyRate) / (1 - Math.pow(1 + weeklyRate, -termWeeks))) * 100,
+      ) / 100;
+  }
+
+  const liability: Liability = {
+    id: `loan_${state.week}_${amount}`,
+    principalUsd: amount,
+    weeklyPaymentUsd: weeklyPayment,
+    weeksRemaining: termWeeks,
+  };
+
+  const newHistory: HistoryEntry[] = [
+    ...state.history,
+    { week: state.week, action: `took_loan_${amount}`, tags: ["took_loan"] },
+  ];
+
+  return [
+    {
+      ...state,
+      cashUsd: round2(state.cashUsd + amount),
+      liabilities: [...state.liabilities, liability],
+      history: newHistory,
+    },
+    null,
+  ];
 }
 
 export function serialize(state: GameState): string {

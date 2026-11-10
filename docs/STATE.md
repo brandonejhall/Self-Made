@@ -13,6 +13,16 @@ Every agent reads this first and updates it last.
 
 - Nothing.
 
+## SM-005 changes
+
+- `sim/index.ts` exports `takeLoan(state, amount, termWeeks): [GameState, string | null]`:
+  - Returns `[state, errorString]` on failure (reputation < 15 unless cash <= -2000 emergency override, or already at maxSimultaneous loan count for the wealth tier).
+  - On success: adds the loan amount to `cashUsd`, appends a `Liability` to `liabilities`, and appends a history entry with tag `took_loan`.
+  - Weekly payment computed with amortization formula: `(principal * weeklyRate) / (1 - (1 + weeklyRate)^(-termWeeks))`, rounded to nearest cent. Zero-APR fallback uses even division.
+  - Liability id format: `loan_<week>_<amount>`.
+- `sim/index.ts` `step()` updated: each active loan's `weeklyPaymentUsd` is summed into `loanPayments` and deducted from cash alongside rent and living costs. `weeksRemaining` is decremented; liabilities with `weeksRemaining === 0` are removed.
+- `tests/sim/loans.test.ts` added with 16 tests covering all acceptance criteria.
+
 ## SM-004 changes
 
 - `sim/types.ts`: `study`, `sideProject`, and `skill` in `WeekInput.hours` are now optional (defaulting to `0`, `0`, and `""` in `step()`). This preserves backward compatibility with `tests/balance/run.ts` and `ui/main.ts` which were not updated when SM-003 added those fields.
@@ -51,3 +61,5 @@ Every agent reads this first and updates it last.
 | 2026-11-09 | Rent moved from city top-level to housingTiers array | GDD specifies 5 housing tiers; SM-006 will wire state.housingTier to the correct array index |
 | 2026-11-09 | WeekInput.hours optional fields (study, sideProject, skill) | balance/run.ts and ui/main.ts were not updated in SM-003; making fields optional avoids breaking those files while keeping step() deterministic |
 | 2026-11-09 | Hustle ceiling uses state.skills (not newSkills) | Skills earned this week take effect next week; consistent with "you plan based on what you know at the start of the week" |
+| 2026-11-09 | takeLoan is a standalone function, not embedded in step() | Loans are player-initiated decisions, not automatic weekly events; keeping it outside step() preserves the pure (state, input) -> newState contract |
+| 2026-11-09 | Loan id uses week+amount composite | Deterministic, human-readable, unique within a typical game run |
