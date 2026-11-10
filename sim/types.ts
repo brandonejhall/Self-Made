@@ -50,5 +50,7 @@ export interface WeekInput {
     work: number;
     hustle: number;
     rest: number;
+    study: number;
+    sideProject: number;
   };
 }

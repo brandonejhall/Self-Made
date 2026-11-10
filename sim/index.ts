@@ -34,39 +34,69 @@ export function newGame(seed: number, cityId: CityId = "kingston"): GameState {
   };
 }
 
-export function validateInput(input: WeekInput): string | null {
-  const { work, hustle, rest } = input.hours;
-  if ([work, hustle, rest].some((h) => h < 0)) return "Hours cannot be negative";
-  if (work + hustle + rest > CONFIG.time.hoursPerWeek) {
+export function validateInput(state: GameState, input: WeekInput): string | null {
+  const { work, hustle, rest, study, sideProject } = input.hours;
+  if ([work, hustle, rest, study, sideProject].some((h) => h < 0))
+    return "Hours cannot be negative";
+  if (work + hustle + rest + study + sideProject > CONFIG.time.hoursPerWeek) {
     return `Total hours exceed ${CONFIG.time.hoursPerWeek}`;
+  }
+  if (state.flags.burnout_active && work + hustle > CONFIG.energy.burnoutMaxHours) {
+    return `While burned out, work + hustle cannot exceed ${CONFIG.energy.burnoutMaxHours} hours`;
   }
   return null;
 }
 
 // Advance one week. Pure: returns a new state and never mutates the input.
 export function step(state: GameState, input: WeekInput): GameState {
-  const error = validateInput(input);
+  const error = validateInput(state, input);
   if (error) throw new Error(error);
 
   const city = CONFIG.cities[state.cityId];
-  const { work, hustle, rest } = input.hours;
+  const { work, hustle, rest, study, sideProject } = input.hours;
 
   const [roll, rngState] = nextRandom(state.rngState);
   const hustleRate =
     city.hustleHourlyMinUsd + roll * (city.hustleHourlyMaxUsd - city.hustleHourlyMinUsd);
 
-  const income = work * city.baseHourlyWageUsd + hustle * hustleRate;
+  // Burnout productivity penalty applies if energy is below threshold at the START of the week
+  const productivityMult =
+    state.energy < CONFIG.energy.burnoutThreshold ? CONFIG.energy.burnoutProductivityMult : 1;
+
+  const income =
+    work * city.baseHourlyWageUsd * productivityMult + hustle * hustleRate * productivityMult;
+
   // TODO SM-006: use state.housingTier to select the correct rent tier
   const costs = CONFIG.cities.kingston.housingTiers[0].weeklyRentUsd + city.weeklyLivingCostUsd;
 
-  const energy = clamp(
-    state.energy +
-      rest * CONFIG.energy.restRecoveryPerHour -
-      work * CONFIG.energy.workCostPerHour -
-      hustle * CONFIG.energy.hustleCostPerHour,
-    0,
-    CONFIG.energy.max,
-  );
+  // Recovery is halved while burnout_active
+  const recoveryMult = state.flags.burnout_active ? CONFIG.energy.burnoutRecoveryMult : 1;
+  const recovery = rest * CONFIG.energy.restRecoveryPerHour * recoveryMult;
+  const drain =
+    work * CONFIG.energy.workCostPerHour +
+    hustle * CONFIG.energy.hustleCostPerHour +
+    study * CONFIG.energy.studyCostPerHour +
+    sideProject * CONFIG.energy.sideProjectCostPerHour;
+
+  const newEnergy = clamp(state.energy + recovery - drain, 0, CONFIG.energy.max);
+
+  // burnoutWeeks: count consecutive weeks where energy hits 0
+  const burnoutWeeks = newEnergy <= 0 ? state.burnoutWeeks + 1 : 0;
+
+  // burnout_active flag lifecycle
+  let flags = { ...state.flags };
+  if (burnoutWeeks >= 2) {
+    flags = { ...flags, burnout_active: true };
+  }
+  if (newEnergy > CONFIG.energy.burnoutClearThreshold && flags.burnout_active) {
+    flags = { ...flags, burnout_active: false };
+    // burnoutWeeks reset is handled below by using 0
+  }
+  // If we just cleared burnout, reset burnoutWeeks to 0
+  const finalBurnoutWeeks =
+    newEnergy > CONFIG.energy.burnoutClearThreshold && state.flags.burnout_active
+      ? 0
+      : burnoutWeeks;
 
   const week = state.week + 1;
   return {
@@ -75,9 +105,10 @@ export function step(state: GameState, input: WeekInput): GameState {
     week,
     age: CONFIG.start.age + Math.floor(week / CONFIG.time.weeksPerYear),
     cashUsd: round2(state.cashUsd + income - costs),
-    energy: round2(energy),
+    energy: round2(newEnergy),
+    burnoutWeeks: finalBurnoutWeeks,
     history: state.history,
-    flags: state.flags,
+    flags,
   };
 }
 

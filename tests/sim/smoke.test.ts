@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { deserialize, newGame, serialize, step, type Asset, type Liability, type WeekInput } from "../../sim";
 
-const week: WeekInput = { hours: { work: 45, hustle: 10, rest: 45 } };
+// work + hustle = 40 (at the burnoutMaxHours cap) so this fixture stays valid even if burnout_active triggers
+const week: WeekInput = { hours: { work: 30, hustle: 10, rest: 60, study: 0, sideProject: 0 } };
 
 describe("sim skeleton", () => {
   it("starts at age 21 with $2,000", () => {
@@ -34,7 +35,9 @@ describe("sim skeleton", () => {
   });
 
   it("rejects more than 100 hours", () => {
-    expect(() => step(newGame(1), { hours: { work: 60, hustle: 30, rest: 20 } })).toThrow();
+    expect(() =>
+      step(newGame(1), { hours: { work: 60, hustle: 20, rest: 20, study: 1, sideProject: 0 } }),
+    ).toThrow();
   });
 
   it("round-trips through serialize", () => {
