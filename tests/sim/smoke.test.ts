@@ -15,8 +15,8 @@ describe("sim skeleton", () => {
     let a = newGame(7);
     let b = newGame(7);
     for (let i = 0; i < 100; i++) {
-      a = step(a, week);
-      b = step(b, week);
+      a = step(a, week).state;
+      b = step(b, week).state;
     }
     expect(a).toEqual(b);
   });
@@ -30,7 +30,7 @@ describe("sim skeleton", () => {
 
   it("ages the player one year every 52 weeks", () => {
     let s = newGame(3);
-    for (let i = 0; i < 52; i++) s = step(s, week);
+    for (let i = 0; i < 52; i++) s = step(s, week).state;
     expect(s.age).toBe(22);
   });
 
@@ -41,7 +41,7 @@ describe("sim skeleton", () => {
   });
 
   it("round-trips through serialize", () => {
-    const s = step(newGame(9), week);
+    const { state: s } = step(newGame(9), week);
     expect(deserialize(serialize(s))).toEqual(s);
   });
 

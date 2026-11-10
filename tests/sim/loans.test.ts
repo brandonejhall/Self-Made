@@ -168,7 +168,7 @@ describe("loan system", () => {
       const before = state.cashUsd;
       const rent = CONFIG.cities.kingston.housingTiers[0].weeklyRentUsd;
       const living = CONFIG.cities.kingston.weeklyLivingCostUsd;
-      const next = step(state, makeInput());
+      const { state: next } = step(state, makeInput());
       // cash = before - rent - living - loanPayment (no income, rest-only week)
       const expectedCash = Math.round((before - rent - living - 25) * 100) / 100;
       expect(next.cashUsd).toBe(expectedCash);
@@ -182,7 +182,7 @@ describe("loan system", () => {
         weeksRemaining: 5,
       };
       const state = withState({ reputation: 50, cashUsd: 5000, liabilities: [loan] });
-      const next = step(state, makeInput());
+      const { state: next } = step(state, makeInput());
       expect(next.liabilities[0]!.weeksRemaining).toBe(4);
     });
 
@@ -194,7 +194,7 @@ describe("loan system", () => {
         weeksRemaining: 1, // last payment this step
       };
       const state = withState({ reputation: 50, cashUsd: 5000, liabilities: [loan] });
-      const next = step(state, makeInput());
+      const { state: next } = step(state, makeInput());
       expect(next.liabilities).toHaveLength(0);
     });
 
@@ -204,7 +204,7 @@ describe("loan system", () => {
         { id: "loan_b", principalUsd: 1000, weeklyPaymentUsd: 25, weeksRemaining: 5 },
       ];
       const state = withState({ reputation: 50, cashUsd: 5000, liabilities: loans, wealthTier: 1 });
-      const next = step(state, makeInput());
+      const { state: next } = step(state, makeInput());
       // loan_a should be gone (weeksRemaining was 1 → 0), loan_b should remain
       expect(next.liabilities).toHaveLength(1);
       expect(next.liabilities[0]!.id).toBe("loan_b");

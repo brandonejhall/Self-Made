@@ -37,14 +37,14 @@ describe("housing system", () => {
   describe("rent deduction in step()", () => {
     it("deducts tier 0 rent ($90) from cash each week", () => {
       const state = withState({ cashUsd: 1000, housingTier: 0 });
-      const next = step(state, makeInput());
+      const { state: next } = step(state, makeInput());
       const expected = Math.round((1000 - tier0.weeklyRentUsd - living) * 100) / 100;
       expect(next.cashUsd).toBe(expected);
     });
 
     it("deducts tier 1 rent ($140) when housingTier is 1", () => {
       const state = withState({ cashUsd: 2000, housingTier: 1 });
-      const next = step(state, makeInput());
+      const { state: next } = step(state, makeInput());
       const expected = Math.round((2000 - tier1.weeklyRentUsd - living) * 100) / 100;
       expect(next.cashUsd).toBe(expected);
     });
@@ -106,13 +106,13 @@ describe("housing system", () => {
     it("increments overdueWeeks when cash goes below overdueCashFloor after a step", () => {
       // costs for tier 0: $90 rent + $60 living = $150; $10 cash → $10 - $150 = -$140 < 0
       const state = withState({ cashUsd: 10, housingTier: 0, overdueWeeks: 0 });
-      const next = step(state, makeInput());
+      const { state: next } = step(state, makeInput());
       expect(next.overdueWeeks).toBe(1);
     });
 
     it("resets overdueWeeks to 0 when cash is non-negative after a step", () => {
       const state = withState({ cashUsd: 5000, housingTier: 0, overdueWeeks: 1 });
-      const next = step(state, makeInput());
+      const { state: next } = step(state, makeInput());
       // $5000 - $90 - $60 = $4850 >= 0
       expect(next.overdueWeeks).toBe(0);
     });
@@ -133,34 +133,34 @@ describe("housing system", () => {
     }
 
     it("resets housingTier to 0 when eviction fires", () => {
-      const next = step(evictionState(), makeInput());
+      const { state: next } = step(evictionState(), makeInput());
       expect(next.housingTier).toBe(0);
     });
 
     it("resets overdueWeeks to 0 after eviction", () => {
-      const next = step(evictionState(), makeInput());
+      const { state: next } = step(evictionState(), makeInput());
       expect(next.overdueWeeks).toBe(0);
     });
 
     it("appends an 'evicted' tag to history on eviction", () => {
-      const next = step(evictionState(), makeInput());
+      const { state: next } = step(evictionState(), makeInput());
       const evictedEntry = next.history.find((h) => h.tags.includes("evicted"));
       expect(evictedEntry).toBeDefined();
       expect(evictedEntry!.action).toBe("evicted");
     });
 
     it("reduces trust['halima_yusuf'] by 20 on eviction", () => {
-      const next = step(evictionState({ trust: { halima_yusuf: 50 } }), makeInput());
+      const { state: next } = step(evictionState({ trust: { halima_yusuf: 50 } }), makeInput());
       expect(next.trust["halima_yusuf"]).toBe(30);
     });
 
     it("sets trust['halima_yusuf'] to -20 when no prior trust entry exists", () => {
-      const next = step(evictionState({ trust: {} }), makeInput());
+      const { state: next } = step(evictionState({ trust: {} }), makeInput());
       expect(next.trust["halima_yusuf"]).toBe(-20);
     });
 
     it("adds a forced repayment liability after eviction", () => {
-      const next = step(evictionState(), makeInput());
+      const { state: next } = step(evictionState(), makeInput());
       const forced = next.liabilities.find((l) => l.id.startsWith("eviction_repay_"));
       expect(forced).toBeDefined();
       expect(forced!.weeklyPaymentUsd).toBe(
@@ -172,7 +172,7 @@ describe("housing system", () => {
     it("does not fire eviction when overdueWeeks reaches only 1", () => {
       // First overdue week — no eviction yet
       const state = withState({ cashUsd: 10, housingTier: 2, overdueWeeks: 0 });
-      const next = step(state, makeInput());
+      const { state: next } = step(state, makeInput());
       expect(next.overdueWeeks).toBe(1);
       expect(next.housingTier).toBe(2); // not evicted
     });

@@ -1,5 +1,41 @@
 import type { CityId } from "./config";
 
+export interface EventTrigger {
+  cities?: string[];
+  minAge?: number;
+  maxAge?: number;
+  minCashUsd?: number;
+  maxCashUsd?: number;
+  minWeek?: number;
+  requiresTags?: string[];
+  forbidsTags?: string[];
+  minYearsAfterTag?: number;
+  weight?: number;
+  once?: boolean;
+}
+
+export interface EventChoice {
+  label: string;
+  effects: {
+    cashUsd?: number;
+    energy?: number;
+    reputation?: number;
+    trust?: Record<string, number>;
+    addTags?: string[];
+    setFlags?: string[];
+  };
+}
+
+export interface GameEvent {
+  id: string;
+  stage: number;
+  channel?: string;
+  title: string;
+  body: string;
+  trigger: EventTrigger;
+  choices: EventChoice[];
+}
+
 export interface HistoryEntry {
   week: number;
   action: string;

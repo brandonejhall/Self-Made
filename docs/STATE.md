@@ -13,6 +13,18 @@ Every agent reads this first and updates it last.
 
 - Nothing.
 
+## SM-008 changes
+
+- `sim/types.ts`: Added three new exported interfaces: `EventTrigger`, `EventChoice`, and `GameEvent`.
+- `sim/index.ts` exports `loadEvents`, `selectEvents`, `applyEvent`, `GameEvent`, `EventTrigger`, `EventChoice`.
+- `sim/index.ts` `step()` signature changed: now accepts an optional third parameter `events: GameEvent[] = []` (default keeps all existing callers working without modification) and returns `{ state: GameState; pendingEvents: GameEvent[] }` instead of `GameState`. After computing the final state, `selectEvents` is called; the rngState returned from event selection is stored back in the returned state.
+- `sim/index.ts` `loadEvents(eventJsonArray: unknown[]): GameEvent[]`: validates required fields (`id` matching `^[a-z0-9_]+$`, integer `stage`, string `title`, string `body`, object `trigger`, array of 2–4 choices each with `label` and `effects`). Throws with the event id (or index) in the error message on the first failing event.
+- `sim/index.ts` `selectEvents(state, events, rngState): [GameEvent[], number]`: filters by all trigger conditions (minWeek, minAge, maxAge, minCashUsd, maxCashUsd, cities, requiresTags, forbidsTags, once, minYearsAfterTag), then picks up to `CONFIG.events.maxPerWeek` events by weighted random draw without replacement using `nextRandom`.
+- `sim/index.ts` `applyEvent(state, eventId, choiceIndex, events): GameState`: applies cashUsd (round2), energy (clamp 0–100), reputation (clamp 0–100), trust (merge-add), setFlags (true), addTags (new HistoryEntry with week/action/tags), and appends eventId to firedEvents. Pure — no mutation of input.
+- All existing tests in `tests/sim/` updated to destructure `{ state }` from `step()` calls. Loop reassignments use `.state` suffix (e.g. `s = step(s, week).state`).
+- `tests/sim/events.test.ts` added with 39 tests covering all acceptance criteria.
+- `docs/BACKLOG.md` "Requested" section: two tickets added for balance-qa and ui-engineer to fix the step() return type in their placeholder files (`tests/balance/run.ts` and `ui/main.ts`) — both files are outside sim-engineer ownership and cannot be edited here.
+
 ## SM-007 changes
 
 - `sim/index.ts` `step()`: passive business income added before computing `newCashAfterAll`. All `asset.weeklyIncomeUsd` values are summed and included in `income` each week (assets without `weeklyIncomeUsd` contribute 0 via `?? 0`).
@@ -92,3 +104,7 @@ Every agent reads this first and updates it last.
 | 2026-11-09 | wealthTier computed at end of step() from final net worth | Ensures tier reflects all changes in the week (income, costs, eviction liabilities) before persisting; tier can increase or decrease each week |
 | 2026-11-09 | launchBusiness is a standalone function outside step() | Business launch is a player-initiated action; keeping it outside step() preserves the pure weekly-advance contract |
 | 2026-11-09 | Tier 2 test cash set to $1,001,000 not $1,000,000 | Weekly costs ($150 rent+living) would drop net worth below threshold after one step; test must account for this to remain deterministic |
+| 2026-11-09 | step() returns { state, pendingEvents } instead of GameState | UI and balance suite must resolve event choices before state advances; embedding inside step() would require passing choice functions into the sim |
+| 2026-11-09 | selectEvents advances rngState; final rngState stored in returned state | Ensures full determinism: event selection consumes seeded entropy, so identical inputs always produce identical pending events |
+| 2026-11-09 | loadEvents uses lightweight field-by-field validation rather than a JSON Schema library | Keeps sim/ free of heavy runtime dependencies; the schema file already serves as documentation |
+| 2026-11-09 | applyEvent adds history entry only when addTags is defined in effects | An entry with empty tags adds noise to history; undefined addTags means the choice intentionally has no tagging effect |

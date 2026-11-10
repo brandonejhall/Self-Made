@@ -23,7 +23,7 @@ describe("energy model", () => {
       const startEnergy = 60;
       const state = withState({ energy: startEnergy });
       // 10 study hours, no other activity
-      const next = step(state, hours(0, 0, 0, 10, 0));
+      const { state: next } = step(state, hours(0, 0, 0, 10, 0));
       const expectedDrain = 10 * CONFIG.energy.studyCostPerHour;
       expect(next.energy).toBeCloseTo(startEnergy - expectedDrain, 5);
     });
@@ -32,7 +32,7 @@ describe("energy model", () => {
       const startEnergy = 60;
       const state = withState({ energy: startEnergy });
       // 10 sideProject hours, no other activity
-      const next = step(state, hours(0, 0, 0, 0, 10));
+      const { state: next } = step(state, hours(0, 0, 0, 0, 10));
       const expectedDrain = 10 * CONFIG.energy.sideProjectCostPerHour;
       expect(next.energy).toBeCloseTo(startEnergy - expectedDrain, 5);
     });
@@ -43,7 +43,7 @@ describe("energy model", () => {
       // Start with energy 1 and drain hard
       const state = withState({ energy: 1, burnoutWeeks: 0 });
       // 100 work hours: drain = 50, recovery = 0 → newEnergy = 0
-      const next = step(state, hours(100, 0, 0));
+      const { state: next } = step(state, hours(100, 0, 0));
       expect(next.energy).toBe(0);
       expect(next.burnoutWeeks).toBe(1);
     });
@@ -52,7 +52,7 @@ describe("energy model", () => {
       // burnoutWeeks already at 1 but then we rest and recover
       const state = withState({ energy: 50, burnoutWeeks: 1 });
       // rest 100 hours: recovery = 60 → energy goes to max 100, above 0
-      const next = step(state, hours(0, 0, 100));
+      const { state: next } = step(state, hours(0, 0, 100));
       expect(next.energy).toBeGreaterThan(0);
       expect(next.burnoutWeeks).toBe(0);
     });
@@ -62,12 +62,12 @@ describe("energy model", () => {
     it("sets burnout_active after energy is 0 for 2 consecutive weeks", () => {
       // Set up: energy is very low so it hits 0 this week (burnoutWeeks becomes 1)
       const state1 = withState({ energy: 1, burnoutWeeks: 0, flags: {} });
-      const state2 = step(state1, hours(100, 0, 0));
+      const { state: state2 } = step(state1, hours(100, 0, 0));
       expect(state2.burnoutWeeks).toBe(1);
       expect(state2.flags.burnout_active).toBeFalsy();
 
       // Second consecutive week at 0 energy → burnout_active should be set
-      const state3 = step(state2, hours(100, 0, 0));
+      const { state: state3 } = step(state2, hours(100, 0, 0));
       expect(state3.burnoutWeeks).toBe(2);
       expect(state3.flags.burnout_active).toBe(true);
     });
@@ -93,7 +93,7 @@ describe("energy model", () => {
         burnoutWeeks: 2,
         flags: { burnout_active: true },
       });
-      const next = step(highEnergyBurnout, hours(0, 0, 100));
+      const { state: next } = step(highEnergyBurnout, hours(0, 0, 100));
       // energy = 25 + 100 * 0.6 * 0.5 = 25 + 30 = 55 > 50
       expect(next.energy).toBeGreaterThan(CONFIG.energy.burnoutClearThreshold);
       expect(next.flags.burnout_active).toBe(false);
@@ -102,7 +102,7 @@ describe("energy model", () => {
 
     it("does not set burnout_active after only one week at 0 energy", () => {
       const state = withState({ energy: 1, burnoutWeeks: 0, flags: {} });
-      const next = step(state, hours(100, 0, 0));
+      const { state: next } = step(state, hours(100, 0, 0));
       expect(next.burnoutWeeks).toBe(1);
       expect(next.flags.burnout_active).toBeFalsy();
     });
@@ -129,8 +129,8 @@ describe("energy model", () => {
         rngState: sharedRngState,
       });
 
-      const nextLow = step(lowEnergyState, inputW);
-      const nextHigh = step(highEnergyState, inputW);
+      const { state: nextLow } = step(lowEnergyState, inputW);
+      const { state: nextHigh } = step(highEnergyState, inputW);
 
       // The cash difference should reflect ~half income for the low-energy run.
       // Both states start with same cashUsd (from newGame default) and same costs.
@@ -166,8 +166,8 @@ describe("energy model", () => {
         rngState: newGame(42).rngState,
       });
       const inputW = hours(40, 0, 60);
-      const nextAt = step(atThreshold, inputW);
-      const nextAbove = step(aboveThreshold, inputW);
+      const { state: nextAt } = step(atThreshold, inputW);
+      const { state: nextAbove } = step(aboveThreshold, inputW);
       // Both should earn the same income (no penalty at threshold)
       // But they differ in starting energy so costs are the same but energy levels differ
       // Income is what matters: work * wage * mult (hustle = 0 so roll doesn't matter)
@@ -228,8 +228,8 @@ describe("energy model", () => {
       const burnoutState = withState({ energy: 30, flags: { burnout_active: true } });
       const inputW = hours(0, 0, 100);
 
-      const nextNormal = step(normalState, inputW);
-      const nextBurnout = step(burnoutState, inputW);
+      const { state: nextNormal } = step(normalState, inputW);
+      const { state: nextBurnout } = step(burnoutState, inputW);
 
       // Normal: 30 + 100 * 0.6 = 90 (clamped to 100 → actually 90 < 100 → 90)
       // Burnout: 30 + 100 * 0.6 * 0.5 = 30 + 30 = 60

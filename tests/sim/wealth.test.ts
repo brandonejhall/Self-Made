@@ -35,21 +35,21 @@ describe("wealthTier recalculation in step()", () => {
   it("wealthTier is 0 when net worth < $10,000", () => {
     // Start with cash below tier 1 threshold, no assets or liabilities
     const state = withState({ cashUsd: 5000, assets: [], liabilities: [] });
-    const next = step(state, makeInput());
+    const { state: next } = step(state, makeInput());
     expect(next.wealthTier).toBe(0);
   });
 
   it("wealthTier is 1 when net worth >= $10,000 and < $1,000,000", () => {
     // Set cash above tier 1 but well below tier 2
     const state = withState({ cashUsd: 50000, assets: [], liabilities: [] });
-    const next = step(state, makeInput());
+    const { state: next } = step(state, makeInput());
     expect(next.wealthTier).toBe(1);
   });
 
   it("wealthTier is 2 when net worth >= $1,000,000", () => {
     // Need enough cash to remain >= 1,000,000 after weekly rent ($90) + living ($60) = $150
     const state = withState({ cashUsd: 1_001_000, assets: [], liabilities: [] });
-    const next = step(state, makeInput());
+    const { state: next } = step(state, makeInput());
     expect(next.wealthTier).toBe(2);
   });
 
@@ -69,7 +69,7 @@ describe("wealthTier recalculation in step()", () => {
       assets: [],
       liabilities: [bigLiability],
     });
-    const next = step(state, makeInput());
+    const { state: next } = step(state, makeInput());
     // net worth = 50000 - 45000 - living costs - rent - loan payment ≈ 4850ish => tier 0
     expect(next.wealthTier).toBe(0);
   });
@@ -82,7 +82,7 @@ describe("wealthTier recalculation in step()", () => {
       liabilities: [],
       flags: {},
     });
-    const next = step(state, makeInput());
+    const { state: next } = step(state, makeInput());
     expect(next.wealthTier).toBe(2);
     expect(next.flags.stage2_unlocked).toBe(true);
   });
@@ -94,7 +94,7 @@ describe("wealthTier recalculation in step()", () => {
       liabilities: [],
       flags: {},
     });
-    const next = step(state, makeInput());
+    const { state: next } = step(state, makeInput());
     expect(next.wealthTier).toBe(1);
     expect(next.flags.stage2_unlocked).toBeUndefined();
   });
@@ -219,7 +219,7 @@ describe("passive business income in step()", () => {
     });
     const rent = CONFIG.cities.kingston.housingTiers[0].weeklyRentUsd;
     const living = CONFIG.cities.kingston.weeklyLivingCostUsd;
-    const next = step(state, makeInput()); // rest-only week, no work/hustle income
+    const { state: next } = step(state, makeInput()); // rest-only week, no work/hustle income
     // cash = cashBefore + businessIncome - rent - living
     const expected =
       Math.round((cashBefore + bizType.weeklyIncomeUsd - rent - living) * 100) / 100;
@@ -254,7 +254,7 @@ describe("passive business income in step()", () => {
     const rent = CONFIG.cities.kingston.housingTiers[0].weeklyRentUsd;
     const living = CONFIG.cities.kingston.weeklyLivingCostUsd;
     const totalBizIncome = foodStall.weeklyIncomeUsd + contentBrand.weeklyIncomeUsd;
-    const next = step(state, makeInput());
+    const { state: next } = step(state, makeInput());
     const expected =
       Math.round((cashBefore + totalBizIncome - rent - living) * 100) / 100;
     expect(next.cashUsd).toBe(expected);
@@ -275,7 +275,7 @@ describe("passive business income in step()", () => {
     });
     const rent = CONFIG.cities.kingston.housingTiers[0].weeklyRentUsd;
     const living = CONFIG.cities.kingston.weeklyLivingCostUsd;
-    const next = step(state, makeInput());
+    const { state: next } = step(state, makeInput());
     const expected = Math.round((cashBefore - rent - living) * 100) / 100;
     expect(next.cashUsd).toBe(expected);
   });

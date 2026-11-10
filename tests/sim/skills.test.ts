@@ -33,32 +33,32 @@ describe("skills system", () => {
   describe("skill increment", () => {
     it("increments a skill by Math.floor(study) per week", () => {
       const state = withState({ skills: {} });
-      const next = step(state, makeInput({ study: 7, skill: "hustle", rest: 93 }));
+      const { state: next } = step(state, makeInput({ study: 7, skill: "hustle", rest: 93 }));
       expect(next.skills["hustle"]).toBe(7); // Math.floor(7) = 7
     });
 
     it("adds to an existing skill value", () => {
       const state = withState({ skills: { hustle: 3 } });
-      const next = step(state, makeInput({ study: 5, skill: "hustle", rest: 95 }));
+      const { state: next } = step(state, makeInput({ study: 5, skill: "hustle", rest: 95 }));
       expect(next.skills["hustle"]).toBe(8);
     });
 
     it("floors fractional study hours", () => {
       const state = withState({ skills: {} });
       // study: 5 (integer) — Math.floor(5) = 5
-      const next = step(state, makeInput({ study: 5, skill: "negotiation", rest: 95 }));
+      const { state: next } = step(state, makeInput({ study: 5, skill: "negotiation", rest: 95 }));
       expect(next.skills["negotiation"]).toBe(5);
     });
 
     it("does not increment any skill when skill string is empty", () => {
       const state = withState({ skills: {} });
-      const next = step(state, makeInput({ study: 10, skill: "", rest: 90 }));
+      const { state: next } = step(state, makeInput({ study: 10, skill: "", rest: 90 }));
       expect(Object.keys(next.skills)).toHaveLength(0);
     });
 
     it("does not increment any skill when study hours are 0", () => {
       const state = withState({ skills: {} });
-      const next = step(state, makeInput({ study: 0, skill: "hustle", rest: 100 }));
+      const { state: next } = step(state, makeInput({ study: 0, skill: "hustle", rest: 100 }));
       expect(next.skills["hustle"]).toBeUndefined();
     });
   });
@@ -67,7 +67,7 @@ describe("skills system", () => {
     it("does NOT set skill_financial_unlocked when financial skill is 2", () => {
       // Start with financial = 1, add 1 via study → newSkills.financial = 2 (< 3)
       const state = withState({ skills: { financial: 1 } });
-      const next = step(state, makeInput({ study: 1, skill: "financial", rest: 99 }));
+      const { state: next } = step(state, makeInput({ study: 1, skill: "financial", rest: 99 }));
       expect(next.skills["financial"]).toBe(2);
       expect(next.flags.skill_financial_unlocked).toBeFalsy();
     });
@@ -75,7 +75,7 @@ describe("skills system", () => {
     it("DOES set skill_financial_unlocked when financial skill reaches 3", () => {
       // Start with financial = 2, add 1 via study → newSkills.financial = 3 (>= 3)
       const state = withState({ skills: { financial: 2 } });
-      const next = step(state, makeInput({ study: 1, skill: "financial", rest: 99 }));
+      const { state: next } = step(state, makeInput({ study: 1, skill: "financial", rest: 99 }));
       expect(next.skills["financial"]).toBe(3);
       expect(next.flags.skill_financial_unlocked).toBe(true);
     });
@@ -83,13 +83,13 @@ describe("skills system", () => {
     it("sets skill_financial_unlocked when financial skill already exceeds threshold", () => {
       // Already at 5; no study needed — flag is set every step once threshold is met
       const state = withState({ skills: { financial: 5 }, flags: {} });
-      const next = step(state, makeInput({ study: 0, skill: "", rest: 100 }));
+      const { state: next } = step(state, makeInput({ study: 0, skill: "", rest: 100 }));
       expect(next.flags.skill_financial_unlocked).toBe(true);
     });
 
     it("does not set skill_financial_unlocked when financial skill stays below threshold", () => {
       const state = withState({ skills: { financial: 1 }, flags: {} });
-      const next = step(state, makeInput({ study: 0, skill: "", rest: 100 }));
+      const { state: next } = step(state, makeInput({ study: 0, skill: "", rest: 100 }));
       expect(next.flags.skill_financial_unlocked).toBeFalsy();
     });
   });
