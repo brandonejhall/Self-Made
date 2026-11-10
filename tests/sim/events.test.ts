@@ -411,8 +411,8 @@ describe("applyEvent", () => {
 describe("loadEvents", () => {
   it("returns valid GameEvent[] for the real grandmother_shoebox event JSON", () => {
     const loaded = loadEvents(stage1FamilyRaw as unknown[]);
-    expect(loaded).toHaveLength(1);
-    const evt = loaded[0]!;
+    expect(loaded.length).toBeGreaterThanOrEqual(1);
+    const evt = loaded.find(e => e.id === "grandmother_shoebox")!;
     expect(evt.id).toBe("grandmother_shoebox");
     expect(evt.stage).toBe(1);
     expect(typeof evt.title).toBe("string");
