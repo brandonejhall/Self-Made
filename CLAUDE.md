@@ -27,13 +27,26 @@ A life-to-empire simulation. The player starts at 21 with $2,000 in one of 6 cit
 - `npm run balance` runs the headless balance suite and writes `tests/balance/report.md`.
 - `npm run dev` starts the UI.
 - `npm run build` builds the static site to `dist/` for Cloudflare Pages.
+- `npm run play` plays the sim in the terminal. `npm run play -- 42` uses seed 42.
+- `npm run validate` checks all content JSON against the schema.
+
+## Slash commands
+
+- `/kickoff`: pm writes the GDD and the vertical slice backlog.
+- `/sprint`: Ready tickets go to their owning agents, in parallel worktrees.
+- `/autotune [rounds]`: balance-qa and sim-engineer tune `sim/config.ts` until the balance targets pass.
+- `/playtest <notes>`: pm turns human playtest notes into tickets.
+
+## Hooks
+
+A Stop and SubagentStop hook runs `npm test` and `tsc --noEmit` whenever an agent tries to finish. A failure sends the error back to the agent.
 
 ## Agents
 
 | Agent | Owns |
 |---|---|
 | pm | `docs/` except `LORE.md` |
-| sim-engineer | `sim/`, `tests/sim/` |
+| sim-engineer | `sim/`, `tests/sim/`, `cli/` |
 | ui-engineer | `ui/` |
 | lore-writer | `content/`, `docs/LORE.md` |
 | balance-qa | `tests/balance/` |

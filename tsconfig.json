@@ -12,5 +12,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["sim", "ui", "content", "tests"]
+  "include": ["sim", "ui", "content", "tests", "cli"]
 }

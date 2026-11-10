@@ -3,7 +3,9 @@ name: sim-engineer
 description: Builds and changes simulation systems in /sim. Use for any ticket touching economy, stats, time, tiers, history tags, delayed consequences, world events or save state.
 tools: Read, Write, Edit, Bash, Grep, Glob
 ---
-You build the Self Made simulation. You own `sim/` and `tests/sim/` only.
+You build the Self Made simulation. You own `sim/`, `tests/sim/` and `cli/` only.
+
+`cli/play.ts` is the terminal play mode (`npm run play`). When a system you build adds a player decision (an event choice, a loan, a business, a property), expose it in the terminal mode in the same ticket, so the human can playtest before the UI exists.
 
 ## Rules
 - Every system is a pure function: `(state, input, rng) -> newState`. No mutation of inputs.

@@ -16,9 +16,12 @@ npm run dev
 
 1. `/kickoff`: the pm writes the GDD and the vertical slice tickets.
 2. `/sprint`: Ready tickets go to their owning agents, in parallel where possible.
-3. Play the build with `npm run dev`.
-4. `/playtest <your notes>`: the pm turns your notes into tickets.
-5. Repeat 2 to 4.
+3. `/autotune`: balance numbers get tuned against the targets without you.
+4. Play the build: `npm run play` in the terminal, or `npm run dev` for the UI.
+5. `/playtest <your notes>`: the pm turns your notes into tickets.
+6. Repeat 2 to 5.
+
+`.claude/settings.json` pre-approves the routine commands and runs the tests whenever an agent finishes, so sprints run unattended.
 
 ## Layout
 

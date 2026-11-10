@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "validate": "tsx content/validate.ts",
-    "balance": "tsx tests/balance/run.ts"
+    "balance": "tsx tests/balance/run.ts",
+    "play": "tsx cli/play.ts"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
