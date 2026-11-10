@@ -1,17 +1,18 @@
-// SM-012 / SM-013: Phone UI — Home, Hour Allocator, Event Cards
+// SM-012 / SM-013 / SM-014: Phone UI
 
 import {
   newGame,
   step,
   applyEvent,
   loadEvents,
-  selectEvents,
+  netWorthUsd,
   serialize,
   deserialize,
   CONFIG,
   type GameState,
   type WeekInput,
   type GameEvent,
+  type HistoryEntry,
 } from "../sim";
 
 import familyRaw from "../content/events/stage1_family.json";
@@ -25,6 +26,7 @@ import hustleWorkRaw from "../content/events/stage1_hustle_work.json";
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const SAVE_KEY = "self-made-save";
+const WORTH_KEY = "self-made-nw";
 const TOTAL_HOURS = 100;
 
 const EVENTS: GameEvent[] = loadEvents([
@@ -66,6 +68,7 @@ const SKILL_OPTIONS: Array<{ value: string; label: string }> = [
 let state: GameState = load();
 let prevState: GameState | null = null;
 let pendingEvents: GameEvent[] = [];
+let nwHistory: number[] = loadNwHistory();
 
 let hours: HourAllocation = { work: 40, hustle: 10, rest: 40, study: 5, sideProject: 5 };
 let skill = "";
@@ -86,7 +89,25 @@ function save(s: GameState): void {
   try {
     localStorage.setItem(SAVE_KEY, serialize(s));
   } catch {
-    // Storage unavailable — game still runs in memory
+    // ignore
+  }
+}
+
+function loadNwHistory(): number[] {
+  try {
+    const raw = localStorage.getItem(WORTH_KEY);
+    if (raw) return JSON.parse(raw) as number[];
+  } catch {
+    // ignore
+  }
+  return [];
+}
+
+function saveNwHistory(): void {
+  try {
+    localStorage.setItem(WORTH_KEY, JSON.stringify(nwHistory));
+  } catch {
+    // ignore
   }
 }
 
@@ -99,6 +120,12 @@ function formatCash(n: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(n);
+}
+
+function formatCashShort(n: number): string {
+  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${Math.round(n)}`;
 }
 
 function getYear(s: GameState): number {
@@ -166,6 +193,10 @@ function createDOM(): void {
       <div id="screen-home" class="screen screen--active">
         <header class="phone-header">
           <h1 class="app-title">Self Made</h1>
+          <div class="header-actions">
+            <button id="btn-chart" class="btn-icon" aria-label="Net worth chart">&#9650;</button>
+            <button id="btn-history" class="btn-icon" aria-label="History log">&#9776;</button>
+          </div>
         </header>
 
         <div class="stat-card">
@@ -233,6 +264,24 @@ function createDOM(): void {
           <p id="event-body" class="event-body"></p>
           <div id="event-choices" class="event-choices"></div>
         </div>
+      </div>
+
+      <!-- ── Net Worth Chart ── -->
+      <div id="screen-chart" class="screen">
+        <header class="phone-header">
+          <button id="btn-chart-back" class="btn-back">← Back</button>
+          <h2 class="screen-title">Net Worth</h2>
+        </header>
+        <div id="chart-container" class="chart-container"></div>
+      </div>
+
+      <!-- ── History Log ── -->
+      <div id="screen-history" class="screen">
+        <header class="phone-header">
+          <button id="btn-history-back" class="btn-back">← Back</button>
+          <h2 class="screen-title">History</h2>
+        </header>
+        <div id="history-list" class="history-list"></div>
       </div>
 
     </div>`;
@@ -315,9 +364,106 @@ function renderEventCard(evt: GameEvent): void {
   });
 }
 
+function renderChart(): void {
+  const container = document.getElementById("chart-container") as HTMLElement;
+  const data = nwHistory;
+
+  if (data.length < 2) {
+    container.innerHTML = `<p class="chart-empty">Advance a few weeks to see your net worth chart.</p>`;
+    return;
+  }
+
+  const W = 358; // chart width (390 - 32px gutter)
+  const H = 200;
+  const PAD = { top: 20, right: 8, bottom: 28, left: 56 };
+  const innerW = W - PAD.left - PAD.right;
+  const innerH = H - PAD.top - PAD.bottom;
+
+  const minV = Math.min(...data);
+  const maxV = Math.max(...data, CONFIG.progression.tier1Threshold);
+  const range = maxV - minV || 1;
+
+  const xOf = (i: number) => PAD.left + (i / (data.length - 1)) * innerW;
+  const yOf = (v: number) => PAD.top + innerH - ((v - minV) / range) * innerH;
+
+  const points = data.map((v, i) => `${xOf(i).toFixed(1)},${yOf(v).toFixed(1)}`).join(" ");
+
+  const tier1Y = yOf(CONFIG.progression.tier1Threshold);
+  const tier2Y = yOf(CONFIG.progression.tier2Threshold);
+
+  // Y-axis labels: minV, tier1, tier2 (if visible), maxV
+  const yLabels: Array<{ v: number; y: number }> = [
+    { v: minV, y: yOf(minV) },
+    { v: maxV, y: yOf(maxV) },
+  ];
+  if (tier1Y >= PAD.top && tier1Y <= PAD.top + innerH) {
+    yLabels.push({ v: CONFIG.progression.tier1Threshold, y: tier1Y });
+  }
+
+  const labelsHtml = yLabels.map(
+    ({ v, y }) =>
+      `<text x="${PAD.left - 4}" y="${y.toFixed(1)}" class="chart-axis-label" text-anchor="end" dominant-baseline="middle">${formatCashShort(v)}</text>`,
+  ).join("");
+
+  // X axis ticks: start, middle, end
+  const xTicks = [0, Math.floor((data.length - 1) / 2), data.length - 1];
+  const xLabelsHtml = xTicks.map(
+    (i) =>
+      `<text x="${xOf(i).toFixed(1)}" y="${(PAD.top + innerH + 16).toFixed(1)}" class="chart-axis-label" text-anchor="middle">W${i}</text>`,
+  ).join("");
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" class="chart-svg" aria-label="Net worth over time">
+      <!-- Tier lines -->
+      ${tier1Y >= PAD.top && tier1Y <= PAD.top + innerH
+        ? `<line x1="${PAD.left}" y1="${tier1Y.toFixed(1)}" x2="${PAD.left + innerW}" y2="${tier1Y.toFixed(1)}" class="chart-tier-line chart-tier1" />`
+        : ""}
+      ${tier2Y >= PAD.top && tier2Y <= PAD.top + innerH
+        ? `<line x1="${PAD.left}" y1="${tier2Y.toFixed(1)}" x2="${PAD.left + innerW}" y2="${tier2Y.toFixed(1)}" class="chart-tier-line chart-tier2" />`
+        : ""}
+      <!-- Data line -->
+      <polyline points="${points}" class="chart-line" fill="none" />
+      <!-- Axes -->
+      <line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${PAD.top + innerH}" class="chart-axis" />
+      <line x1="${PAD.left}" y1="${PAD.top + innerH}" x2="${PAD.left + innerW}" y2="${PAD.top + innerH}" class="chart-axis" />
+      ${labelsHtml}
+      ${xLabelsHtml}
+    </svg>
+    <div class="chart-legend">
+      <span class="legend-item legend-item--tier1">Tier 1 $10K</span>
+      <span class="legend-item legend-item--tier2">Tier 2 $1M</span>
+    </div>`;
+}
+
+function renderHistoryLog(): void {
+  const list = document.getElementById("history-list") as HTMLElement;
+  const entries = [...state.history].reverse();
+
+  if (entries.length === 0) {
+    list.innerHTML = `<p class="history-empty">No history yet. Advance a week to start.</p>`;
+    return;
+  }
+
+  list.innerHTML = entries.map((entry: HistoryEntry) => {
+    const tagPills = entry.tags.map(
+      (t) => `<span class="tag-pill">${t}</span>`,
+    ).join("");
+    return `
+      <div class="history-entry">
+        <div class="history-meta">
+          <span class="history-week">W${entry.week}</span>
+          <span class="history-action">${entry.action}</span>
+        </div>
+        ${tagPills ? `<div class="history-tags">${tagPills}</div>` : ""}
+      </div>`;
+  }).join("");
+}
+
 // ── Navigation ────────────────────────────────────────────────────────────
 
-function showScreen(id: "screen-home" | "screen-allocator" | "screen-event"): void {
+type ScreenId = "screen-home" | "screen-allocator" | "screen-event" | "screen-chart" | "screen-history";
+
+function showScreen(id: ScreenId): void {
   document.querySelectorAll<HTMLDivElement>(".screen").forEach((el) => {
     el.classList.toggle("screen--active", el.id === id);
   });
@@ -341,6 +487,10 @@ function advanceWeek(): void {
   const { state: newState, pendingEvents: fired } = step(state, input, EVENTS);
   state = newState;
   save(state);
+
+  // Record net worth snapshot after step (before events resolve)
+  nwHistory.push(netWorthUsd(state));
+  saveNwHistory();
 
   if (fired.length > 0) {
     pendingEvents = fired;
@@ -374,6 +524,24 @@ function wireEvents(): void {
   });
 
   document.getElementById("btn-back")!.addEventListener("click", () => {
+    showScreen("screen-home");
+  });
+
+  document.getElementById("btn-chart")!.addEventListener("click", () => {
+    renderChart();
+    showScreen("screen-chart");
+  });
+
+  document.getElementById("btn-history")!.addEventListener("click", () => {
+    renderHistoryLog();
+    showScreen("screen-history");
+  });
+
+  document.getElementById("btn-chart-back")!.addEventListener("click", () => {
+    showScreen("screen-home");
+  });
+
+  document.getElementById("btn-history-back")!.addEventListener("click", () => {
     showScreen("screen-home");
   });
 

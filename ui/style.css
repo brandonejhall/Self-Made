@@ -285,6 +285,34 @@ button {
   cursor: pointer;
 }
 
+/* ── Header actions (chart / history icons) ─────────────────────────────── */
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.btn-icon {
+  background: #18181b;
+  border: 1px solid #333;
+  border-radius: 10px;
+  color: #aaa;
+  font-size: 1rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.btn-icon:active {
+  background: #2a2a2e;
+}
+
 /* ── Event card ──────────────────────────────────────────────────────────── */
 
 .event-card {
@@ -330,4 +358,128 @@ button {
   flex-direction: column;
   gap: 10px;
   margin-top: auto;
+}
+
+/* ── Chart screen ────────────────────────────────────────────────────────── */
+
+.chart-container {
+  padding: 0 0 16px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart-line {
+  stroke: #f2f2f2;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart-axis {
+  stroke: #333;
+  stroke-width: 1;
+}
+
+.chart-axis-label {
+  fill: #888;
+  font-size: 9px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.chart-tier-line {
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+.chart-tier1 { stroke: #4ade80; }
+.chart-tier2 { stroke: #fbbf24; }
+
+.chart-legend {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0 0 56px;
+}
+
+.legend-item {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.legend-item--tier1 { color: #4ade80; }
+.legend-item--tier2 { color: #fbbf24; }
+
+.chart-empty {
+  color: #888;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 40px 16px;
+}
+
+/* ── History log ─────────────────────────────────────────────────────────── */
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 24px;
+}
+
+.history-entry {
+  background: #18181b;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.history-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.history-week {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #555;
+  flex-shrink: 0;
+  min-width: 32px;
+}
+
+.history-action {
+  font-size: 0.9rem;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.history-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.tag-pill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #0d0d0f;
+  background: #aaa;
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+
+.history-empty {
+  color: #888;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 40px 16px;
 }
