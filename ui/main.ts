@@ -1,19 +1,41 @@
-// SM-012: Phone UI — Home/Week Summary and Hour Allocator
+// SM-012 / SM-013: Phone UI — Home, Hour Allocator, Event Cards
 
 import {
   newGame,
   step,
+  applyEvent,
+  loadEvents,
+  selectEvents,
   serialize,
   deserialize,
   CONFIG,
   type GameState,
   type WeekInput,
+  type GameEvent,
 } from "../sim";
+
+import familyRaw from "../content/events/stage1_family.json";
+import finOppRaw from "../content/events/stage1_financial_opportunity.json";
+import finThreatRaw from "../content/events/stage1_financial_threat.json";
+import relationshipRaw from "../content/events/stage1_relationship.json";
+import worldClockRaw from "../content/events/stage1_world_clock.json";
+import consequenceRaw from "../content/events/stage1_consequence.json";
+import hustleWorkRaw from "../content/events/stage1_hustle_work.json";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const SAVE_KEY = "self-made-save";
 const TOTAL_HOURS = 100;
+
+const EVENTS: GameEvent[] = loadEvents([
+  ...familyRaw,
+  ...finOppRaw,
+  ...finThreatRaw,
+  ...relationshipRaw,
+  ...worldClockRaw,
+  ...consequenceRaw,
+  ...hustleWorkRaw,
+]);
 
 interface HourAllocation {
   work: number;
@@ -43,8 +65,8 @@ const SKILL_OPTIONS: Array<{ value: string; label: string }> = [
 
 let state: GameState = load();
 let prevState: GameState | null = null;
+let pendingEvents: GameEvent[] = [];
 
-// Default allocation sums to exactly 100 so the button starts enabled
 let hours: HourAllocation = { work: 40, hustle: 10, rest: 40, study: 5, sideProject: 5 };
 let skill = "";
 
@@ -203,6 +225,16 @@ function createDOM(): void {
         <button id="btn-advance" class="btn-primary">Advance Week</button>
       </div>
 
+      <!-- ── Event Card ── -->
+      <div id="screen-event" class="screen">
+        <div class="event-card">
+          <span id="event-channel" class="event-channel"></span>
+          <h2 id="event-title" class="event-title"></h2>
+          <p id="event-body" class="event-body"></p>
+          <div id="event-choices" class="event-choices"></div>
+        </div>
+      </div>
+
     </div>`;
 }
 
@@ -264,9 +296,28 @@ function renderAllocator(): void {
   });
 }
 
+function renderEventCard(evt: GameEvent): void {
+  (document.getElementById("event-channel") as HTMLElement).textContent =
+    evt.channel ?? "";
+  (document.getElementById("event-title") as HTMLElement).textContent =
+    evt.title;
+  (document.getElementById("event-body") as HTMLElement).textContent =
+    evt.body;
+
+  const choicesEl = document.getElementById("event-choices") as HTMLElement;
+  choicesEl.innerHTML = "";
+  evt.choices.forEach((choice, idx) => {
+    const btn = document.createElement("button");
+    btn.className = "btn-primary";
+    btn.textContent = choice.label;
+    btn.addEventListener("click", () => resolveEvent(evt, idx));
+    choicesEl.appendChild(btn);
+  });
+}
+
 // ── Navigation ────────────────────────────────────────────────────────────
 
-function showScreen(id: "screen-home" | "screen-allocator"): void {
+function showScreen(id: "screen-home" | "screen-allocator" | "screen-event"): void {
   document.querySelectorAll<HTMLDivElement>(".screen").forEach((el) => {
     el.classList.toggle("screen--active", el.id === id);
   });
@@ -282,17 +333,36 @@ function advanceWeek(): void {
       rest: hours.rest,
       study: hours.study,
       sideProject: hours.sideProject,
-      skill: skill,
+      skill: skill as string,
     },
   };
 
   prevState = state;
-  // step() returns { state, pendingEvents }; events handled in SM-013
-  const { state: newState } = step(state, input, []);
+  const { state: newState, pendingEvents: fired } = step(state, input, EVENTS);
   state = newState;
   save(state);
-  showScreen("screen-home");
-  renderHome();
+
+  if (fired.length > 0) {
+    pendingEvents = fired;
+    showScreen("screen-event");
+    renderEventCard(pendingEvents[0]!);
+  } else {
+    showScreen("screen-home");
+    renderHome();
+  }
+}
+
+function resolveEvent(evt: GameEvent, choiceIndex: number): void {
+  state = applyEvent(state, evt.id, choiceIndex, EVENTS);
+  save(state);
+
+  pendingEvents = pendingEvents.slice(1);
+  if (pendingEvents.length > 0) {
+    renderEventCard(pendingEvents[0]!);
+  } else {
+    showScreen("screen-home");
+    renderHome();
+  }
 }
 
 // ── Event wiring ──────────────────────────────────────────────────────────
