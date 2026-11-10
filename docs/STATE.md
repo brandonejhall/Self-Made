@@ -108,6 +108,17 @@ Every agent reads this first and updates it last.
 - `sim/index.ts` `step()` updated: `city.weeklyRentUsd` replaced with `CONFIG.cities.kingston.housingTiers[0].weeklyRentUsd` as a placeholder pending SM-006 (housing system).
 - `tests/sim/config.test.ts` added with 15 tests covering every acceptance criterion.
 
+## SM-012 changes
+
+- `ui/main.ts`: Full phone UI. Two screens: Home (cash, energy bar, rep/age/year/week stats, cash+energy delta from previous week) and Hour Allocator (5 stepper fields: work/hustle/rest/study/side-project, skill selector, Advance Week button disabled until total = 100). `advanceWeek()` sends all 6 `WeekInput` fields and destructures `{ state: newState }` from `step()`. Save/load via `serialize`/`deserialize` to localStorage. First load calls `newGame(Date.now() >>> 0, 'kingston')`.
+- `ui/style.css`: Mobile-first dark theme. max-width 390px, 16px gutter. Energy bar with green/yellow/red threshold coloring via CSS classes. Stepper buttons, hour inputs with native spinner hidden, skill select.
+- Events are not shown yet — `step()` is called with `events = []` pending SM-013.
+
+## SM-011 changes
+
+- `tests/balance/run.ts`: Headless balance runner. Loads all 7 event JSON files via `loadEvents()`. Three strategies: passive (full-time job, 40 work + 60 rest, no hustle/loans/businesses), competent (balanced work/hustle/study, skilled job, one $2500/52wk loan, food stall + delivery), greedy (financial study week 1, energy-neutral work=35+hustle=15+rest=50, all businesses, 52-week loans). 100 seeds each. Snapshots at weeks 156, 312, 468. Writes `tests/balance/report.md`.
+- Balance results: passive W468 median $62,400 ✓ ($10K–$80K). Competent W468 median $356,269 (misses $500K–$2M target). Greedy W468 median $413,807 (misses $800K–$3M target). Greedy consequence rate 0% (misses ≥50% target). Gaps documented in report notes and SM-015 ticket added to Requested.
+
 ## Decision log
 
 | Date | Decision | Reason |
@@ -133,3 +144,6 @@ Every agent reads this first and updates it last.
 | 2026-11-09 | selectEvents advances rngState; final rngState stored in returned state | Ensures full determinism: event selection consumes seeded entropy, so identical inputs always produce identical pending events |
 | 2026-11-09 | loadEvents uses lightweight field-by-field validation rather than a JSON Schema library | Keeps sim/ free of heavy runtime dependencies; the schema file already serves as documentation |
 | 2026-11-09 | applyEvent adds history entry only when addTags is defined in effects | An entry with empty tags adds noise to history; undefined addTags means the choice intentionally has no tagging effect |
+| 2026-11-09 | Passive strategy switched from 20hrs part-time to 40hrs full-time in balance suite | Part-time 20hrs ($100/week) < $150 living costs → death spiral; full-time 40hrs ($280/week) → +$130/week net |
+| 2026-11-09 | Greedy strategy uses energy-neutral hours (work=35+hustle=15+rest=50) in balance suite | Aggressive hours (work=40+hustle=20+rest=40) drain energy faster than recovery → burnout in 4 weeks → income halved → death spiral |
+| 2026-11-09 | Balance targets for competent and greedy not met; SM-015 ticket created | Missing mechanics: property appreciation, business growth events, higher-tier investments. Targets assume future systems |
