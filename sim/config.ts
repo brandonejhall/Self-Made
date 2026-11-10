@@ -45,7 +45,7 @@ export const CONFIG = {
       jobs: [
         { id: "gig",       minCommitHours: 0,  hourlyWageUsd: 3.50,  lossThresholdHours: 0,  lossConsecutiveWeeks: 0 },
         { id: "part_time", minCommitHours: 20, hourlyWageUsd: 5.00,  lossThresholdHours: 15, lossConsecutiveWeeks: 2 },
-        { id: "full_time", minCommitHours: 40, hourlyWageUsd: 7.00,  lossThresholdHours: 30, lossConsecutiveWeeks: 2 },
+        { id: "full_time", minCommitHours: 40, hourlyWageUsd: 6.00,  lossThresholdHours: 30, lossConsecutiveWeeks: 2 },
         { id: "skilled",   minCommitHours: 40, hourlyWageUsd: 12.00, lossThresholdHours: 30, lossConsecutiveWeeks: 2 },
       ],
     },

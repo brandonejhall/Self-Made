@@ -1,8 +1,8 @@
 # Balance Report (SM-025)
 
 Seeds 0 to 299 per strategy (300 runs each), city kingston, 468 weeks. Reproduce one run with `newGame(seed, "kingston")` and the strategy in `tests/balance/run.ts`.
-Events loaded: 58 from 8 files. Delayed-consequence events (requiresTags + minYearsAfterTag): `shady_loan_collector`, `ex_partner_competitor`, `eviction_insurance_block`, `sibling_second_ask`, `loan_refinance_offer`, `followup_loan_shark_collects`, `followup_partner_sues`, `followup_permit_raid`, `followup_tax_audit`, `followup_stolen_phones_traced`, `followup_bribe_clerk_arrested`, `followup_forged_valuation_exposed`, `followup_sibling_injury`, `followup_tobias_calls_ledger`.
-Runtime: 7.4 s for 1200 runs.
+Events loaded: 59 from 8 files. Delayed-consequence events (requiresTags + minYearsAfterTag): `shady_loan_collector`, `ex_partner_competitor`, `eviction_insurance_block`, `sibling_second_ask`, `loan_refinance_offer`, `followup_loan_shark_collects`, `followup_partner_sues`, `followup_permit_raid`, `followup_tax_audit`, `followup_stolen_phones_traced`, `followup_bribe_clerk_arrested`, `followup_forged_valuation_exposed`, `followup_sibling_injury`, `followup_tobias_calls_ledger`.
+Runtime: 6.7 s for 1200 runs.
 
 Age at week w = 21 + w/52. W156 = age 24, W312 = age 27, W468 = age 30.
 
@@ -21,19 +21,19 @@ Gating tags the competent rule avoids: `bought_stolen_stock`, `cut_out_partner`,
 
 | Strategy | W156 p10 | W156 median | W156 p90 | W312 p10 | W312 median | W312 p90 | W468 p10 | W468 median | W468 p90 |
 |---|---|---|---|---|---|---|---|---|---|
-| greedy | $134,532 | $158,483 | $185,671 | $704,231 | $887,512 | $987,457 | $1,522,076 | $1,803,787 | $1,977,688 |
-| competent | $115,265 | $164,543 | $174,348 | $452,064 | $679,443 | $717,825 | $925,555 | $1,206,505 | $1,330,490 |
-| passive | $22,275 | $22,275 | $22,275 | $41,755 | $41,755 | $41,755 | $62,035 | $62,035 | $62,035 |
-| random | $-18,713 | $-13,720 | $-9,137 | $-40,671 | $-35,922 | $-30,053 | $-62,512 | $-57,522 | $-51,022 |
+| greedy | $171,266 | $201,295 | $215,793 | $774,625 | $960,577 | $1,047,266 | $1,593,299 | $1,885,767 | $2,039,486 |
+| competent | $124,789 | $165,046 | $174,927 | $448,856 | $683,428 | $719,307 | $899,260 | $1,251,299 | $1,336,236 |
+| passive | $16,110 | $16,110 | $16,110 | $30,150 | $30,150 | $30,150 | $44,190 | $44,190 | $44,190 |
+| random | $-18,913 | $-13,979 | $-9,979 | $-40,646 | $-36,171 | $-31,718 | $-62,682 | $-58,035 | $-52,455 |
 
 ## $1M, evictions, delayed consequences
 
 | Strategy | Median age at $1M | Runs reaching $1M | Eviction rate | Runs with >=1 delayed consequence | Runs with >=1 major delayed consequence |
 |---|---|---|---|---|---|
-| greedy | 27.4 | 300 / 300 (100.0%) | 0.0% | 300 / 300 (100.0%) | 300 / 300 (100.0%) |
-| competent | 28.7 | 255 / 300 (85.0%) | 0.0% | 300 / 300 (100.0%) | 0 / 300 (0.0%) |
-| passive | not reached | 0 / 300 (0.0%) | 0.0% | 300 / 300 (100.0%) | 300 / 300 (100.0%) |
-| random | not reached | 0 / 300 (0.0%) | 99.7% | 300 / 300 (100.0%) | 248 / 300 (82.7%) |
+| greedy | 27.1 | 300 / 300 (100.0%) | 0.0% | 300 / 300 (100.0%) | 300 / 300 (100.0%) |
+| competent | 28.6 | 254 / 300 (84.7%) | 0.0% | 300 / 300 (100.0%) | 0 / 300 (0.0%) |
+| passive | not reached | 0 / 300 (0.0%) | 0.0% | 300 / 300 (100.0%) | 0 / 300 (0.0%) |
+| random | not reached | 0 / 300 (0.0%) | 99.7% | 300 / 300 (100.0%) | 262 / 300 (87.3%) |
 
 Major = every choice costs at least $250 cash or 10 reputation. Major events: `followup_loan_shark_collects`, `followup_partner_sues`, `followup_permit_raid`, `followup_tax_audit`, `followup_stolen_phones_traced`, `followup_bribe_clerk_arrested`, `followup_forged_valuation_exposed`, `followup_sibling_injury`.
 
@@ -41,20 +41,20 @@ Delayed consequences fired, by event (total fires across runs):
 
 | Event | greedy | competent | passive | random |
 |---|---|---|---|---|
-| `shady_loan_collector` (took_shady_loan) | 0 | 0 | 0 | 60 |
-| `ex_partner_competitor` (cut_partner_first) | 300 | 0 | 0 | 85 |
+| `shady_loan_collector` (took_shady_loan) | 300 | 0 | 0 | 51 |
+| `ex_partner_competitor` (cut_partner_first) | 300 | 0 | 0 | 89 |
 | `eviction_insurance_block` (evicted) | 0 | 0 | 0 | 299 |
 | `sibling_second_ask` (ignored_sibling_ask) | 300 | 0 | 300 | 105 |
-| `loan_refinance_offer` (took_loan) | 300 | 300 | 0 | 235 |
-| `followup_loan_shark_collects` (major) (took_loan_shark) | 0 | 0 | 0 | 145 |
-| `followup_partner_sues` (major) (cut_out_partner) | 0 | 0 | 0 | 47 |
-| `followup_permit_raid` (major) (skipped_permit) | 300 | 0 | 300 | 109 |
-| `followup_tax_audit` (major) (underreported_income) | 300 | 0 | 300 | 131 |
-| `followup_stolen_phones_traced` (major) (bought_stolen_stock) | 300 | 0 | 0 | 126 |
-| `followup_bribe_clerk_arrested` (major) (paid_bribe) | 300 | 0 | 300 | 110 |
+| `loan_refinance_offer` (took_loan) | 300 | 300 | 0 | 232 |
+| `followup_loan_shark_collects` (major) (took_loan_shark) | 300 | 0 | 0 | 164 |
+| `followup_partner_sues` (major) (cut_out_partner) | 0 | 0 | 0 | 46 |
+| `followup_permit_raid` (major) (skipped_permit) | 300 | 0 | 0 | 115 |
+| `followup_tax_audit` (major) (underreported_income) | 300 | 0 | 0 | 123 |
+| `followup_stolen_phones_traced` (major) (bought_stolen_stock) | 300 | 0 | 0 | 137 |
+| `followup_bribe_clerk_arrested` (major) (paid_bribe) | 300 | 0 | 0 | 118 |
 | `followup_forged_valuation_exposed` (major) (forged_valuation) | 300 | 0 | 0 | 4 |
-| `followup_sibling_injury` (major) (paid_sibling_off_books) | 300 | 0 | 300 | 108 |
-| `followup_tobias_calls_ledger` (owes_tobias_wren) | 0 | 0 | 0 | 106 |
+| `followup_sibling_injury` (major) (paid_sibling_off_books) | 300 | 0 | 0 | 125 |
+| `followup_tobias_calls_ledger` (owes_tobias_wren) | 0 | 0 | 0 | 128 |
 
 ## Business stages and property
 
@@ -64,7 +64,7 @@ Median age at the first week any owned business sits at stage N. Not reached = t
 
 | Strategy | Stage 1 (Startup) | Stage 2 (Established) | Stage 3 (Growing) | Stage 4 (Scaled) | Props W156 | Props W312 | Props W468 |
 |---|---|---|---|---|---|---|---|
-| greedy | 22.2 (100.0%) | 22.7 (100.0%) | 23.7 (100.0%) | 25.3 (100.0%) | 3 | 3 | 3 |
+| greedy | 22.0 (100.0%) | 22.5 (100.0%) | 23.5 (100.0%) | 25.0 (100.0%) | 3 | 3 | 3 |
 | competent | 21.8 (100.0%) | 22.3 (100.0%) | 23.3 (100.0%) | 24.8 (100.0%) | 3 | 3 | 3 |
 | passive | not reached (0.0%) | not reached (0.0%) | not reached (0.0%) | not reached (0.0%) | 0 | 0 | 0 |
 | random | not reached (0.3%) | not reached (0.0%) | not reached (0.0%) | not reached (0.0%) | 0 | 0 | 0 |
@@ -102,10 +102,10 @@ Ties sort by event id. Every `once` event fires in nearly every 468-week run, so
 **random**
 
 - `meet_halima` #0 (Go meet her at the shop.): 163 picks
-- `first_partner_meet` #1 (Leave it. Too busy right now.): 158 picks
+- `first_partner_meet` #1 (Leave it. Too busy right now.): 157 picks
 - `mobile_money_hustle` #1 (Not worth your time.): 157 picks
-- `failed_hustle_food` #0 (Take the loss. Try again next weekend.): 155 picks
-- `halima_loan_offer` #1 (Thank her and decline for now.): 154 picks
+- `failed_hustle_food` #0 (Take the loss. Try again next weekend.): 154 picks
+- `market_theft` #1 (Let it go. Waste of time.): 153 picks
 
 ## Dominant choices (picked in over 80% of winning runs)
 
@@ -113,17 +113,17 @@ Greedy, competent and passive pick deterministically, so for them any event that
 
 **greedy**: winning = reached $1M by week 468; 300 runs.
 
-`aunt_pressure_home#0` 100.0%, `bad_debt_helping#2` 100.0%, `community_dispute#0` 100.0%, `energy_transition_construction#0` 100.0%, `era1_gig_shock#0` 100.0%, `ex_partner_competitor#0` 100.0%, `failed_hustle_food#1` 100.0%, `family_emergency_cost#2` 100.0%, `family_funeral_contribution#2` 100.0%, `first_partner_meet#0` 100.0%, `followup_bribe_clerk_arrested#0` 100.0%, `followup_forged_valuation_exposed#1` 100.0%, `followup_permit_raid#1` 100.0%, `followup_sibling_injury#2` 100.0%, `followup_stolen_phones_traced#2` 100.0%, `followup_tax_audit#2` 100.0%, `gig_opportunity_delivery#0` 100.0%, `grandmother_land_dispute#1` 100.0%, `grandmother_shoebox#0` 100.0%, `halima_hustle_tip#0` 100.0%, `housing_repair#2` 100.0%, `job_offer_data_entry#0` 100.0%, `kingston_informal_market_event#1` 100.0%, `loan_refinance_offer#1` 100.0%, `market_theft#0` 100.0%, `meet_halima#0` 100.0%, `mid_decade_market_shift#0` 100.0%, `mobile_money_hustle#0` 100.0%, `neighbourhood_paint_contract#1` 100.0%, `partner_direction_conflict#2` 100.0%, `partner_financial_ask#1` 100.0%, `partner_hand_invite#1` 100.0%, `phone_scam#0` 100.0%, `shortcut_bribe_queue#0` 100.0%, `shortcut_cash_no_receipt#0` 100.0%, `shortcut_forged_valuation#0` 100.0%, `shortcut_sibling_off_books#0` 100.0%, `shortcut_skip_permit#0` 100.0%, `shortcut_stolen_stock#0` 100.0%, `sibling_money_ask#1` 100.0%, `sibling_second_ask#1` 100.0%, `skills_gated_bookkeeping#0` 100.0%, `uncle_tip_plot#1` 100.0%, `unexpected_medical_bill#2` 100.0%, `workplace_confrontation#1` 100.0%, `quick_flip_shoes#2` 86.3%, `resale_market_find#2` 85.3%, `business_tip_neighbour#2` 81.3%
+`aunt_pressure_home#0` 100.0%, `bad_debt_helping#2` 100.0%, `community_dispute#0` 100.0%, `energy_transition_construction#0` 100.0%, `era1_gig_shock#0` 100.0%, `ex_partner_competitor#0` 100.0%, `failed_hustle_food#1` 100.0%, `family_emergency_cost#2` 100.0%, `family_funeral_contribution#2` 100.0%, `first_partner_meet#0` 100.0%, `followup_bribe_clerk_arrested#0` 100.0%, `followup_forged_valuation_exposed#1` 100.0%, `followup_loan_shark_collects#1` 100.0%, `followup_permit_raid#1` 100.0%, `followup_sibling_injury#2` 100.0%, `followup_stolen_phones_traced#2` 100.0%, `followup_tax_audit#2` 100.0%, `gig_opportunity_delivery#0` 100.0%, `grandmother_land_dispute#1` 100.0%, `grandmother_shoebox#0` 100.0%, `halima_hustle_tip#0` 100.0%, `housing_repair#2` 100.0%, `job_offer_data_entry#0` 100.0%, `kingston_informal_market_event#1` 100.0%, `loan_refinance_offer#1` 100.0%, `market_theft#0` 100.0%, `meet_halima#0` 100.0%, `mid_decade_market_shift#0` 100.0%, `mobile_money_hustle#0` 100.0%, `neighbourhood_paint_contract#1` 100.0%, `partner_direction_conflict#2` 100.0%, `partner_financial_ask#1` 100.0%, `partner_hand_invite#1` 100.0%, `phone_scam#0` 100.0%, `shady_loan_collector#1` 100.0%, `shortcut_bribe_queue#0` 100.0%, `shortcut_cash_no_receipt#0` 100.0%, `shortcut_forged_valuation#0` 100.0%, `shortcut_loan_shark_bank_debt#0` 100.0%, `shortcut_sibling_off_books#0` 100.0%, `shortcut_skip_permit#0` 100.0%, `shortcut_stolen_stock#0` 100.0%, `sibling_money_ask#1` 100.0%, `sibling_second_ask#1` 100.0%, `skills_gated_bookkeeping#0` 100.0%, `uncle_tip_plot#1` 100.0%, `unexpected_medical_bill#2` 100.0%, `workplace_confrontation#1` 100.0%, `quick_flip_shoes#2` 97.3%, `business_tip_neighbour#2` 97.0%, `resale_market_find#2` 96.3%
 
-**competent**: winning = reached $1M by week 468; 255 runs.
+**competent**: winning = reached $1M by week 468; 254 runs.
 
-`aunt_pressure_home#0` 100.0%, `bad_debt_helping#2` 100.0%, `community_dispute#0` 100.0%, `energy_transition_construction#0` 100.0%, `era1_gig_shock#0` 100.0%, `failed_hustle_food#1` 100.0%, `family_emergency_cost#2` 100.0%, `family_funeral_contribution#2` 100.0%, `first_partner_meet#1` 100.0%, `gig_opportunity_delivery#0` 100.0%, `grandmother_shoebox#2` 100.0%, `housing_repair#2` 100.0%, `job_offer_data_entry#1` 100.0%, `kingston_informal_market_event#1` 100.0%, `loan_refinance_offer#1` 100.0%, `market_theft#0` 100.0%, `meet_halima#1` 100.0%, `mid_decade_market_shift#0` 100.0%, `mobile_money_hustle#0` 100.0%, `neighbourhood_paint_contract#1` 100.0%, `phone_scam#0` 100.0%, `shortcut_bribe_queue#1` 100.0%, `shortcut_cash_no_receipt#1` 100.0%, `shortcut_forged_valuation#1` 100.0%, `shortcut_sibling_off_books#1` 100.0%, `shortcut_skip_permit#1` 100.0%, `shortcut_stolen_stock#1` 100.0%, `shortcut_underreport_income#1` 100.0%, `sibling_money_ask#2` 100.0%, `uncle_tip_plot#1` 100.0%, `unexpected_medical_bill#2` 100.0%
+`aunt_pressure_home#0` 100.0%, `bad_debt_helping#2` 100.0%, `community_dispute#0` 100.0%, `energy_transition_construction#0` 100.0%, `era1_gig_shock#0` 100.0%, `failed_hustle_food#1` 100.0%, `family_emergency_cost#2` 100.0%, `family_funeral_contribution#2` 100.0%, `first_partner_meet#1` 100.0%, `gig_opportunity_delivery#0` 100.0%, `grandmother_shoebox#2` 100.0%, `housing_repair#2` 100.0%, `job_offer_data_entry#1` 100.0%, `kingston_informal_market_event#1` 100.0%, `loan_refinance_offer#1` 100.0%, `market_theft#0` 100.0%, `meet_halima#1` 100.0%, `mid_decade_market_shift#0` 100.0%, `mobile_money_hustle#0` 100.0%, `neighbourhood_paint_contract#1` 100.0%, `phone_scam#0` 100.0%, `shortcut_bribe_queue#1` 100.0%, `shortcut_cash_no_receipt#1` 100.0%, `shortcut_forged_valuation#1` 100.0%, `shortcut_loan_shark_bank_debt#1` 100.0%, `shortcut_sibling_off_books#1` 100.0%, `shortcut_skip_permit#1` 100.0%, `shortcut_stolen_stock#1` 100.0%, `shortcut_underreport_income#1` 100.0%, `sibling_money_ask#2` 100.0%, `uncle_tip_plot#1` 100.0%, `unexpected_medical_bill#2` 100.0%
 
-**passive**: winning = no run reached $1M; top quartile by W468 net worth (>= $62,035); 300 runs.
+**passive**: winning = no run reached $1M; top quartile by W468 net worth (>= $44,190); 300 runs.
 
-`aunt_pressure_home#2` 100.0%, `bad_debt_helping#2` 100.0%, `community_dispute#2` 100.0%, `energy_transition_construction#2` 100.0%, `era1_gig_shock#1` 100.0%, `failed_hustle_food#1` 100.0%, `family_emergency_cost#2` 100.0%, `family_funeral_contribution#2` 100.0%, `first_partner_meet#1` 100.0%, `followup_bribe_clerk_arrested#0` 100.0%, `followup_permit_raid#1` 100.0%, `followup_sibling_injury#2` 100.0%, `followup_tax_audit#2` 100.0%, `gig_opportunity_delivery#2` 100.0%, `grandmother_shoebox#2` 100.0%, `housing_repair#2` 100.0%, `job_offer_data_entry#1` 100.0%, `kingston_informal_market_event#2` 100.0%, `market_theft#1` 100.0%, `meet_halima#1` 100.0%, `mid_decade_market_shift#2` 100.0%, `mobile_money_hustle#1` 100.0%, `neighbourhood_paint_contract#2` 100.0%, `phone_scam#0` 100.0%, `shortcut_bribe_queue#1` 100.0%, `shortcut_cash_no_receipt#1` 100.0%, `shortcut_forged_valuation#2` 100.0%, `shortcut_sibling_off_books#0` 100.0%, `shortcut_skip_permit#0` 100.0%, `shortcut_stolen_stock#1` 100.0%, `shortcut_underreport_income#0` 100.0%, `sibling_money_ask#1` 100.0%, `sibling_second_ask#1` 100.0%, `uncle_tip_plot#1` 100.0%, `unexpected_medical_bill#2` 100.0%
+`aunt_pressure_home#2` 100.0%, `bad_debt_helping#2` 100.0%, `community_dispute#2` 100.0%, `energy_transition_construction#2` 100.0%, `era1_gig_shock#1` 100.0%, `failed_hustle_food#1` 100.0%, `family_emergency_cost#2` 100.0%, `family_funeral_contribution#2` 100.0%, `first_partner_meet#1` 100.0%, `gig_opportunity_delivery#2` 100.0%, `grandmother_shoebox#2` 100.0%, `housing_repair#2` 100.0%, `job_offer_data_entry#1` 100.0%, `kingston_informal_market_event#2` 100.0%, `market_theft#1` 100.0%, `meet_halima#1` 100.0%, `mid_decade_market_shift#2` 100.0%, `mobile_money_hustle#1` 100.0%, `neighbourhood_paint_contract#2` 100.0%, `phone_scam#0` 100.0%, `shortcut_bribe_queue#1` 100.0%, `shortcut_cash_no_receipt#1` 100.0%, `shortcut_forged_valuation#2` 100.0%, `shortcut_sibling_off_books#1` 100.0%, `shortcut_skip_permit#1` 100.0%, `shortcut_stolen_stock#1` 100.0%, `shortcut_underreport_income#1` 100.0%, `sibling_money_ask#1` 100.0%, `sibling_second_ask#1` 100.0%, `uncle_tip_plot#1` 100.0%, `unexpected_medical_bill#2` 100.0%
 
-**random**: winning = no run reached $1M; top quartile by W468 net worth (>= $-54,639); 75 runs.
+**random**: winning = no run reached $1M; top quartile by W468 net worth (>= $-55,266); 75 runs.
 
 none
 
@@ -131,10 +131,10 @@ none
 
 | ID | Target | Actual | Result |
 |---|---|---|---|
-| T1 | Competent median reaches $1M at age 27 to 30 | median age 28.7; 85.0% of runs reached $1M; W468 median $1,206,505 | PASS |
-| T2 | Greedy median age at $1M lower than competent | greedy 27.4 vs competent 28.7 | PASS |
+| T1 | Competent median reaches $1M at age 27 to 30 | median age 28.6; 84.7% of runs reached $1M; W468 median $1,251,299 | PASS |
+| T2 | Greedy median age at $1M lower than competent | greedy 27.1 vs competent 28.6 | PASS |
 | T3 | 50%+ of greedy runs fire a major delayed consequence | 100.0% major; 100.0% any | PASS |
-| T4 | Passive median net worth at W468 under $50K | $62,035 | FAIL |
+| T4 | Passive median net worth at W468 under $50K | $44,190 | PASS |
 
 ## Recommended sim/config.ts changes
 

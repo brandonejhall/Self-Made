@@ -12,18 +12,20 @@ describe("golden runs (468 weeks)", () => {
     expect(ALL_EVENTS.length).toBe(40);
   });
 
+  // Re-recorded 2026-11-09 after the balance tune: full-time wage $7.00 -> $6.00 (passive target, CONCEPT.md).
+  // Lower cash shifts event eligibility, so rngState and reputation moved too. Policy B holds no full-time job and is unchanged.
   it("seed 12345, policy A (full-time job, loans, housing, business) matches the golden snapshot", () => {
     expect(runGolden(12345, 468, POLICY_A)).toEqual({
       "week": 468,
       "age": 30,
-      "cashUsd": 145246.45,
+      "cashUsd": 122212.15,
       "energy": 100,
-      "reputation": 100,
-      "netWorthUsd": 146246.45,
+      "reputation": 95,
+      "netWorthUsd": 123212.15,
       "wealthTier": 1,
       "housingTier": 1,
       "activeJobId": "full_time",
-      "rngState": 2237039534,
+      "rngState": 29402839,
       "historyLength": 48,
       "firedEventsCount": 35,
       "eventsShown": 35,
@@ -39,7 +41,7 @@ describe("golden runs (468 weeks)", () => {
         "owns_portmore_plot": true,
         "mystery_zurich_open": true
       },
-      "stateHash": "55abacba"
+      "stateHash": "58163ff3"
     });
   });
 
