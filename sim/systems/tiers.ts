@@ -22,5 +22,6 @@ export function tiersSystem(ctx: StepContext): StepContext {
     wealthTier >= 2
       ? { ...ctx.next.flags, stage2_unlocked: true }
       : ctx.next.flags;
-  return { ...ctx, next: { ...ctx.next, wealthTier, flags } };
+  const maxWealthTier = Math.max(ctx.prev.maxWealthTier, wealthTier);
+  return { ...ctx, next: { ...ctx.next, wealthTier, maxWealthTier, flags } };
 }

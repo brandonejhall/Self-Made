@@ -4,6 +4,7 @@ import { CONFIG } from "../config";
 import { nextRandom } from "../rng";
 import type { EventChoice, GameEvent, GameState, HistoryEntry } from "../types";
 import { clamp, round2, type StepContext } from "../util";
+import { netWorthUsd } from "./tiers";
 
 // Draws this week's pending events. Runs last so triggers see the end-of-week state.
 export function eventsSystem(
@@ -195,6 +196,13 @@ export function applyEvent(
   }
 
   s = { ...s, firedEvents: [...s.firedEvents, eventId] };
+
+  // SM-020: log the choice and its net worth effect for the age-30 summary.
+  const netWorthDeltaUsd = round2(netWorthUsd(s) - netWorthUsd(state));
+  s = {
+    ...s,
+    choiceLog: [...s.choiceLog, { week: s.week, eventId, choiceIndex, netWorthDeltaUsd }],
+  };
 
   return s;
 }

@@ -2,6 +2,8 @@
 // Any change here means sim behavior changed. A pure refactor must leave this green.
 // SM-017 re-recorded policy A: business failure draws (1 per owned business per week) shift the
 // RNG; the food stall fails at week 86 and is relaunched. Policy B never owns a business: unchanged.
+// SM-020 re-recorded stateHash only (both policies): serialize now includes stage1Complete, summary,
+// choiceLog and maxWealthTier. Every other field, including rngState, is unchanged.
 import { describe, expect, it } from "vitest";
 import { ALL_EVENTS, POLICY_A, POLICY_B, runGolden } from "./golden.helpers";
 
@@ -37,7 +39,7 @@ describe("golden runs (468 weeks)", () => {
         "owns_portmore_plot": true,
         "mystery_zurich_open": true
       },
-      "stateHash": "917250b9"
+      "stateHash": "55abacba"
     });
   });
 
@@ -68,7 +70,7 @@ describe("golden runs (468 weeks)", () => {
         "owns_portmore_plot": true,
         "mystery_zurich_open": true
       },
-      "stateHash": "596b4b9a"
+      "stateHash": "4c340198"
     });
   });
 

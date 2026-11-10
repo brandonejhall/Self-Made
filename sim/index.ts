@@ -18,8 +18,20 @@ import { energySystem } from "./systems/energy";
 import { timeSystem } from "./systems/time";
 import { tiersSystem } from "./systems/tiers";
 import { eventsSystem } from "./systems/events";
+import { STAGE1_COMPLETE_ERROR, endOfRunSystem, isStage1End } from "./systems/endOfRun";
 
-export type { GameState, WeekInput, HistoryEntry, Asset, Liability, GameEvent, EventTrigger, EventChoice } from "./types";
+export type {
+  GameState,
+  WeekInput,
+  HistoryEntry,
+  Asset,
+  Liability,
+  GameEvent,
+  EventTrigger,
+  EventChoice,
+  ChoiceLogEntry,
+  Stage1Summary,
+} from "./types";
 export { CONFIG } from "./config";
 export { validateInput } from "./systems/input";
 export { netWorthUsd } from "./systems/tiers";
@@ -30,6 +42,7 @@ export { effectiveLoanApr, takeLoan } from "./systems/loans";
 export { effectiveHustleCeiling } from "./systems/income";
 export { moveHousing } from "./systems/housing";
 export { loadEvents, selectEvents, applyEvent } from "./systems/events";
+export { buildSummary } from "./systems/endOfRun";
 
 export function newGame(seed: number, cityId: CityId = "kingston"): GameState {
   return {
@@ -55,6 +68,10 @@ export function newGame(seed: number, cityId: CityId = "kingston"): GameState {
     wealthTier: 0,
     activeJobId: null,
     underHoursWeeks: 0,
+    stage1Complete: false,
+    summary: null,
+    choiceLog: [],
+    maxWealthTier: 0,
   };
 }
 
@@ -77,12 +94,15 @@ const WEEK_PIPELINE: ReadonlyArray<(ctx: StepContext) => StepContext> = [
   tiersSystem,
 ];
 
-// Advance one week. Pure: returns a new state and pending events, never mutates the input.
+// Advance one week. Throws "Stage 1 is complete" once the run has ended. The week that
+// reaches CONFIG.progression.stage1EndWeek sets stage1Complete and summary, and draws no
+// events: the run is over, so nothing is left to resolve. Pure: returns a new state and pending events, never mutates the input.
 export function step(
   state: GameState,
   input: WeekInput,
   events: GameEvent[] = [],
 ): { state: GameState; pendingEvents: GameEvent[] } {
+  if (state.stage1Complete) throw new Error(STAGE1_COMPLETE_ERROR);
   const error = validateInput(state, input);
   if (error) throw new Error(error);
 
@@ -99,6 +119,9 @@ export function step(
   };
 
   const ctx = WEEK_PIPELINE.reduce((c, system) => system(c), initial);
+  if (isStage1End(ctx.next)) {
+    return { state: endOfRunSystem(ctx.next, events), pendingEvents: [] };
+  }
   const [finalCtx, pendingEvents] = eventsSystem(ctx, events);
 
   return { state: finalCtx.next, pendingEvents };
@@ -108,8 +131,15 @@ export function serialize(state: GameState): string {
   return JSON.stringify(state);
 }
 
+// Saves made before SM-020 lack the end-of-run fields. Fill them so old saves keep loading.
 export function deserialize(json: string): GameState {
-  const parsed = JSON.parse(json) as GameState;
+  const parsed = JSON.parse(json) as Partial<GameState> & { version: number };
   if (parsed.version !== 1) throw new Error(`Unsupported save version ${parsed.version}`);
-  return parsed;
+  return {
+    ...parsed,
+    stage1Complete: parsed.stage1Complete ?? false,
+    summary: parsed.summary ?? null,
+    choiceLog: parsed.choiceLog ?? [],
+    maxWealthTier: parsed.maxWealthTier ?? parsed.wealthTier ?? 0,
+  } as GameState;
 }
