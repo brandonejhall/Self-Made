@@ -16,9 +16,8 @@ Seeds with ≥1 consequence tag at week 468: 0 / 100 (0%)
 
 ## Notes
 
-- Passive: part-time job, 20 work hours, rest-heavy. No loans or businesses.
-- Competent: full/skilled job, hustle, studies financial, takes one loan, launches food stall + delivery.
-- Greedy: full-time job, max hustle, borrows aggressively at every slot, launches all businesses when eligible.
-- GDD Section 12 targets: passive $10K–$80K, competent $500K–$2M, greedy $800K–$3M at week 468.
-- These targets assume future economy features (property appreciation, business events, compounding).
-  Adjust config and strategies as new mechanics land.
+- Passive: full-time job, 40 work hours, 60 rest, no hustle/loans/business. ✅ meets $10K–$80K target.
+- Competent: skilled job + hustle + all businesses. Misses $500K–$2M target (~$356K). Gap: no property rental, no business growth events.
+- Greedy: aggressive business launch + 52-week loans. Misses $800K–$3M target (~$414K). Same missing mechanics.
+- Greedy consequence rate 0%: greedy maintains positive cash (no evictions); shady loan events require events that set took_shady_loan tag.
+- Remaining work: property system, business growth events, higher-tier investments, shady-deal event choices.
