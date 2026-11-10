@@ -31,4 +31,6 @@ export interface StepContext {
   businessIncomeUsd: number;
   housingCostUsd: number;
   loanPaymentsUsd: number;
+  propertyRentUsd: number;  // SM-016: rent from occupied rental properties
+  propertyCostsUsd: number; // SM-016: maintenance plus mortgage payments
 }

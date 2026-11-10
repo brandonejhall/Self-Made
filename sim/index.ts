@@ -9,6 +9,7 @@ import { normalizeHours, validateInput } from "./systems/input";
 import { skillsSystem } from "./systems/skills";
 import { incomeSystem } from "./systems/income";
 import { businessIncomeSystem } from "./systems/business";
+import { propertySystem } from "./systems/property";
 import { housingCostSystem, evictionSystem } from "./systems/housing";
 import { loanRepaymentSystem } from "./systems/loans";
 import { cashflowSystem } from "./systems/cashflow";
@@ -23,6 +24,7 @@ export { CONFIG } from "./config";
 export { validateInput } from "./systems/input";
 export { netWorthUsd } from "./systems/tiers";
 export { launchBusiness } from "./systems/business";
+export { buyProperty, sellProperty, mortgagePaymentUsd } from "./systems/property";
 export { holdJob, quitJob } from "./systems/jobs";
 export { effectiveLoanApr, takeLoan } from "./systems/loans";
 export { effectiveHustleCeiling } from "./systems/income";
@@ -56,12 +58,14 @@ export function newGame(seed: number, cityId: CityId = "kingston"): GameState {
   };
 }
 
-// Fixed system order. RNG draws: incomeSystem (1 roll), then eventsSystem.
+// Fixed system order. RNG draws: incomeSystem (1 roll), propertySystem (1 roll per owned
+// property, none when no property is owned), then eventsSystem.
 // Reordering changes results; the golden test in tests/sim/golden.test.ts guards it.
 const WEEK_PIPELINE: ReadonlyArray<(ctx: StepContext) => StepContext> = [
   skillsSystem,
   incomeSystem,
   businessIncomeSystem,
+  propertySystem,
   housingCostSystem,
   loanRepaymentSystem,
   cashflowSystem,
@@ -89,6 +93,8 @@ export function step(
     businessIncomeUsd: 0,
     housingCostUsd: 0,
     loanPaymentsUsd: 0,
+    propertyRentUsd: 0,
+    propertyCostsUsd: 0,
   };
 
   const ctx = WEEK_PIPELINE.reduce((c, system) => system(c), initial);

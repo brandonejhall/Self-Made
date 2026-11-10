@@ -47,6 +47,13 @@ export interface Asset {
   type: string;
   bookValueUsd: number;
   weeklyIncomeUsd?: number; // for businesses / rental
+  // SM-016 rental property fields. Property rent lives in weeklyRentUsd, never weeklyIncomeUsd,
+  // so the business income sum does not count it.
+  kind?: "business" | "property";
+  weeklyRentUsd?: number;
+  occupied?: boolean;
+  vacantWeeksRemaining?: number;
+  purchaseWeek?: number;
 }
 
 export interface Liability {
@@ -54,6 +61,11 @@ export interface Liability {
   principalUsd: number;
   weeklyPaymentUsd: number;
   weeksRemaining: number;
+  // SM-016: mortgages are settled by the property system, not loan repayment,
+  // and do not count toward loans.maxSimultaneous.
+  kind?: "loan" | "mortgage";
+  propertyId?: string;
+  aprPct?: number;
 }
 
 export interface GameState {
