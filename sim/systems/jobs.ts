@@ -20,7 +20,7 @@ export function jobLossSystem(ctx: StepContext): StepContext {
   const { prev } = ctx;
   let activeJobId = prev.activeJobId;
   let underHoursWeeks = prev.underHoursWeeks;
-  let reputation = prev.reputation;
+  let reputation = ctx.next.reputation; // next, not prev: earlier systems (business failure) may have changed it
   let history = ctx.next.history;
 
   if (activeJobId) {

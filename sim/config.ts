@@ -67,6 +67,15 @@ export const CONFIG = {
       { id: "short_term_rental", launchCostUsd: 1500, weeklyIncomeUsd: 220, sector: "rental" },
       { id: "content_brand",     launchCostUsd: 500,  weeklyIncomeUsd: 80,  sector: "content" },
     ],
+    // GDD 8.4. Index 0 is stage 1. minWeeksToEnter and reinvestToEnterUsd are measured at the previous stage.
+    stages: [
+      { stage: 1, name: "Startup",     incomeMult: 1, minWeeksToEnter: 0,  reinvestToEnterUsd: 0,     weeklyFailureChance: 0.003 },
+      { stage: 2, name: "Established", incomeMult: 2, minWeeksToEnter: 26, reinvestToEnterUsd: 5000,  weeklyFailureChance: 0.0015 },
+      { stage: 3, name: "Growing",     incomeMult: 4, minWeeksToEnter: 52, reinvestToEnterUsd: 20000, weeklyFailureChance: 0.001 },
+      { stage: 4, name: "Scaled",      incomeMult: 8, minWeeksToEnter: 78, reinvestToEnterUsd: 60000, weeklyFailureChance: 0.0005 },
+    ],
+    burnoutFailureMult: 2,
+    failureReputationPenalty: 5,
   },
   skills: {
     hustleWageCeilingPerPoint: 0.5,
