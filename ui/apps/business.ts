@@ -1,7 +1,8 @@
 // SM-023: Business app. Owned businesses with weekly income, business types, launch.
-// Sim calls: launchBusiness, netWorthUsd.
+// SM-021: Grow action per business.
+// Sim calls: launchBusiness, reinvestBusiness, netWorthUsd.
 
-import { CONFIG, launchBusiness, netWorthUsd, type Asset, type GameState } from "../../sim";
+import { CONFIG, launchBusiness, netWorthUsd, reinvestBusiness, type Asset, type GameState } from "../../sim";
 import { actionButton, card, empty, h, kv, prettyId, req, section, usd } from "./shared";
 import type { AppContext, PhoneApp } from "./types";
 
@@ -11,16 +12,66 @@ function ownedBusinesses(state: GameState): Asset[] {
   return state.assets.filter((a) => BUSINESS_TYPE_IDS.has(a.type));
 }
 
-// ── PLACEHOLDER: Grow action (SM-017) ────────────────────────────────────
-// SM-017 adds business reinvest / stage advance to the sim. When it merges:
-// import the sim's grow function from "../../sim", dry-run it here for the
-// cost, new weekly income and any requirement, and return an actionButton(...)
-// in place of the disabled button below. Nothing else in this file changes.
-function renderGrowAction(_ctx: AppContext, _asset: Asset): HTMLElement {
-  const btn = h("button", { class: "btn-secondary", disabled: "" }, "Grow (coming soon)");
-  return h("div", { class: "action action--placeholder", "data-placeholder": "SM-017" }, btn);
+// SM-021: Grow action. Shows stage progress and reinvests the remaining amount
+// the next stage needs. The stage advance itself happens in step().
+function renderGrowAction(ctx: AppContext, asset: Asset): HTMLElement {
+  const state = ctx.getState();
+  const stages = CONFIG.businesses.stages;
+  const stage = asset.stage ?? 1;
+  const cur = stages[stage - 1];
+  const next = stages[stage];
+  const lines: HTMLElement[] = [
+    kv("Stage", `${stage} of ${stages.length}${cur ? ` (${cur.name})` : ""}`),
+    kv("Income multiplier", `${cur?.incomeMult ?? 1}x`),
+  ];
+  if (!next) {
+    lines.push(h("div", { class: "app-note" }, "Top stage reached. Nothing left to grow."));
+    return h("div", { class: "grow" }, ...lines);
+  }
+
+  const weeks = asset.weeksAtStage ?? 0;
+  const reinvested = asset.reinvestedAtStageUsd ?? 0;
+  const remaining = Math.max(0, Math.round((next.reinvestToEnterUsd - reinvested) * 100) / 100);
+  const base = CONFIG.businesses.types.find((b) => b.id === asset.type)?.weeklyIncomeUsd ?? 0;
+  const weeksOk = weeks >= next.minWeeksToEnter;
+
+  lines.push(
+    kv(`Next: stage ${next.stage} (${next.name})`, `${next.incomeMult}x, ${usd(base * next.incomeMult)} / week`, "kv__value--good"),
+    kv("Weeks at stage", `${weeks} of ${next.minWeeksToEnter}`, weeksOk ? "kv__value--good" : ""),
+    kv("Reinvested", `${usd(reinvested)} of ${usd(next.reinvestToEnterUsd)}`, remaining === 0 ? "kv__value--good" : ""),
+  );
+
+  if (remaining === 0) {
+    lines.push(
+      h(
+        "div",
+        { class: "app-note" },
+        weeksOk
+          ? "Ready. The business grows when you advance the week."
+          : `Fully funded. It grows after ${next.minWeeksToEnter - weeks} more weeks at this stage.`,
+      ),
+    );
+    return h("div", { class: "grow" }, ...lines);
+  }
+
+  const [after, err] = reinvestBusiness(state, asset.id, remaining);
+  lines.push(
+    req(`Cash ${usd(remaining)}+ (you: ${usd(state.cashUsd)})`, state.cashUsd >= remaining),
+    actionButton(ctx, {
+      label: `Grow: reinvest ${usd(remaining)}`,
+      confirmLines: [
+        ["Reinvest now", usd(remaining)],
+        ["Cash after", err ? "Blocked" : usd(after.cashUsd)],
+        ["Weeks at stage", `${weeks} of ${next.minWeeksToEnter}`],
+        ["Income after growth", `${usd(base * next.incomeMult)} / week`],
+      ],
+      blockedReason: err,
+      action: (s) => reinvestBusiness(s, asset.id, remaining),
+      successMessage: `Reinvested ${usd(remaining)} in ${prettyId(asset.type)}.`,
+    }),
+  );
+  return h("div", { class: "grow" }, ...lines);
 }
-// ── END PLACEHOLDER ──────────────────────────────────────────────────────
 
 function render(root: HTMLElement, ctx: AppContext): void {
   const state = ctx.getState();

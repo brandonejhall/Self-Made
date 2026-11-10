@@ -1,4 +1,4 @@
-// SM-012 / SM-013 / SM-014 / SM-023: Phone UI
+// SM-012 / SM-013 / SM-014 / SM-023 / SM-021: Phone UI
 
 import {
   newGame,
@@ -6,6 +6,7 @@ import {
   applyEvent,
   loadEvents,
   netWorthUsd,
+  buildSummary,
   validateInput,
   serialize,
   deserialize,
@@ -14,6 +15,7 @@ import {
   type WeekInput,
   type GameEvent,
   type HistoryEntry,
+  type Stage1Summary,
 } from "../sim";
 
 import { ALL_EVENT_DATA } from "../content";
@@ -25,6 +27,9 @@ const SAVE_KEY = "self-made-save";
 const WORTH_KEY = "self-made-nw";
 const META_KEY = "self-made-ui-meta";
 const TOTAL_HOURS = 100;
+
+// Tier titles from docs/LORE.md "Wealth tiers". Stage 1 reaches tier 2 at most.
+const TIER_TITLES: readonly string[] = ["Scrub", "Hustler", "Owner"];
 
 const EVENTS: GameEvent[] = loadEvents(ALL_EVENT_DATA as Parameters<typeof loadEvents>[0]);
 
@@ -308,6 +313,15 @@ function createDOM(): void {
         </div>
       </div>
 
+      <!-- ── Age-30 Summary (SM-021) ── -->
+      <div id="screen-summary" class="screen">
+        <header class="phone-header">
+          <h1 class="app-title">Age 30</h1>
+        </header>
+        <div id="summary-body" class="app-body"></div>
+        <button id="btn-new-run" class="btn-primary">New run</button>
+      </div>
+
       <!-- ── Net Worth Chart ── -->
       <div id="screen-chart" class="screen">
         <header class="phone-header">
@@ -515,7 +529,8 @@ type ScreenId =
   | "screen-event"
   | "screen-chart"
   | "screen-history"
-  | "screen-app";
+  | "screen-app"
+  | "screen-summary";
 
 function showScreen(id: ScreenId): void {
   document.querySelectorAll<HTMLDivElement>(".screen").forEach((el) => {
@@ -539,6 +554,11 @@ function buildWeekInput(): WeekInput {
 }
 
 function advanceWeek(): void {
+  // The run is over: never call step() again.
+  if (state.stage1Complete) {
+    showSummary();
+    return;
+  }
   const input = buildWeekInput();
 
   let result: ReturnType<typeof step>;
@@ -560,7 +580,10 @@ function advanceWeek(): void {
   nwHistory.push(netWorthUsd(state));
   saveNwHistory();
 
-  if (fired.length > 0) {
+  if (state.stage1Complete) {
+    pendingEvents = [];
+    showSummary();
+  } else if (fired.length > 0) {
     pendingEvents = fired;
     showScreen("screen-event");
     renderEventCard(pendingEvents[0]!);
@@ -581,6 +604,104 @@ function resolveEvent(evt: GameEvent, choiceIndex: number): void {
     showScreen("screen-home");
     renderHome();
   }
+}
+
+// ── Age-30 summary (SM-021) ──────────────────────────────────────────────
+
+function eventById(id: string): GameEvent | undefined {
+  return EVENTS.find((e) => e.id === id);
+}
+
+function el(tag: string, cls: string, text: string): HTMLElement {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  e.textContent = text;
+  return e;
+}
+
+function kvRow(label: string, value: string, cls = ""): HTMLElement {
+  const row = el("div", "kv", "");
+  row.append(el("span", "kv__label", label), el("span", `kv__value ${cls}`.trim(), value));
+  return row;
+}
+
+function signedCash(n: number): string {
+  return `${n >= 0 ? "+" : "-"}${formatCash(Math.abs(n))}`;
+}
+
+function renderSummary(): void {
+  const summary: Stage1Summary = state.summary ?? buildSummary(state, EVENTS);
+  const body = document.getElementById("summary-body") as HTMLElement;
+  body.replaceChildren();
+
+  const tier = summary.wealthTierReached;
+  const headline = el("div", "app-card", "");
+  headline.append(
+    el("span", "stat-label", "Final net worth"),
+    el("div", "stat-cash", formatCash(summary.finalNetWorthUsd)),
+    kvRow("Highest tier", `Tier ${tier}: ${TIER_TITLES[tier] ?? `Tier ${tier}`}`, "kv__value--good"),
+    kvRow("Age", String(state.age)),
+    kvRow("Week", String(state.week)),
+    kvRow("Cash", formatCash(state.cashUsd)),
+  );
+
+  const choicesSection = el("div", "app-section", "");
+  choicesSection.append(el("span", "stat-label", "Choices that moved your net worth most"));
+  if (summary.topChoices.length === 0) {
+    choicesSection.append(el("p", "app-empty", "No event choices changed your net worth."));
+  }
+  for (const c of summary.topChoices) {
+    const evt = eventById(c.eventId);
+    const cardEl = el("div", "app-card", "");
+    cardEl.append(
+      el("div", "app-card__title", evt?.title ?? c.eventId),
+      kvRow("Week", `${c.week} (age ${CONFIG.start.age + Math.floor(c.week / CONFIG.time.weeksPerYear)})`),
+      kvRow("You chose", evt?.choices[c.choiceIndex]?.label ?? `Choice ${c.choiceIndex + 1}`),
+      kvRow("Net worth effect", signedCash(c.netWorthDeltaUsd), c.netWorthDeltaUsd >= 0 ? "kv__value--good" : "kv__value--warn"),
+    );
+    choicesSection.append(cardEl);
+  }
+
+  const consSection = el("div", "app-section", "");
+  consSection.append(el("span", "stat-label", "Consequences that caught up with you"));
+  const consCard = el("div", "app-card", "");
+  if (summary.consequencesFired.length === 0) {
+    consCard.append(el("p", "app-empty", "None fired."));
+  }
+  for (const id of summary.consequencesFired) {
+    consCard.append(el("div", "summary-consequence", eventById(id)?.title ?? id));
+  }
+  consSection.append(consCard);
+
+  body.append(headline, choicesSection, consSection);
+}
+
+function showSummary(): void {
+  openAppId = null;
+  appFlash = null;
+  renderSummary();
+  showScreen("screen-summary");
+  window.scrollTo(0, 0);
+}
+
+function startNewRun(): void {
+  try {
+    localStorage.removeItem(SAVE_KEY);
+    localStorage.removeItem(WORTH_KEY);
+    localStorage.removeItem(META_KEY);
+  } catch {
+    // ignore
+  }
+  state = newGame(Date.now() >>> 0, "kingston");
+  prevState = null;
+  pendingEvents = [];
+  nwHistory = [];
+  uiMeta.loans = {}; // appContext.meta holds this object, so clear it in place
+  save(state);
+  renderHome();
+  renderAllocator();
+  showScreen("screen-home");
+  window.scrollTo(0, 0);
 }
 
 // ── Phone apps ────────────────────────────────────────────────────────────
@@ -636,6 +757,10 @@ function renderApp(): void {
 
 function wireEvents(): void {
   document.getElementById("btn-plan")!.addEventListener("click", () => {
+    if (state.stage1Complete) {
+      showSummary();
+      return;
+    }
     showScreen("screen-allocator");
     renderAllocator();
   });
@@ -703,6 +828,8 @@ function wireEvents(): void {
   });
 
   document.getElementById("btn-advance")!.addEventListener("click", advanceWeek);
+
+  document.getElementById("btn-new-run")!.addEventListener("click", startNewRun);
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────
@@ -712,7 +839,8 @@ function init(): void {
   wireEvents();
   renderHome();
   renderAllocator();
-  showScreen("screen-home");
+  if (state.stage1Complete) showSummary();
+  else showScreen("screen-home");
 }
 
 init();

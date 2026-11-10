@@ -708,3 +708,55 @@ button {
   gap: 8px;
   margin-top: 6px;
 }
+
+/* ── Property toggles and business growth (SM-021) ───────────────────────── */
+
+.toggle-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 6px;
+}
+
+.toggle {
+  padding: 8px 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #2a2a2e;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.toggle--on {
+  background: #f2f2f2;
+  color: #0d0d0f;
+  border-color: #f2f2f2;
+}
+
+.grow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #2a2a2e;
+}
+
+/* ── Age-30 summary (SM-021) ─────────────────────────────────────────────── */
+
+#screen-summary .btn-primary {
+  margin-top: 16px;
+}
+
+.summary-consequence {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 4px 0;
+  border-bottom: 1px solid #2a2a2e;
+}
+
+.summary-consequence:last-child {
+  border-bottom: 0;
+}

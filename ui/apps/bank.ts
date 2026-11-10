@@ -14,6 +14,7 @@ function pct(n: number): string {
 }
 
 function loanLabel(l: Liability): string {
+  if (l.kind === "mortgage") return "Mortgage (see Property)";
   if (l.id.startsWith("eviction_repay")) return "Back-rent repayment (eviction)";
   return "Loan";
 }
@@ -36,7 +37,8 @@ function render(root: HTMLElement, ctx: AppContext): void {
   const state = ctx.getState();
   const apr = effectiveLoanApr(state);
   const cap = loanCap(state);
-  const held = state.liabilities.length;
+  // Mortgages do not use a loan slot.
+  const held = state.liabilities.filter((l) => l.kind !== "mortgage").length;
   const weeklyDebt = state.liabilities.reduce((sum, l) => sum + l.weeklyPaymentUsd, 0);
   const isEmergency = state.cashUsd <= CONFIG.loans.emergencyMinCash;
 
@@ -53,7 +55,7 @@ function render(root: HTMLElement, ctx: AppContext): void {
     return card(
       h("div", { class: "app-card__title" }, loanLabel(l)),
       kv("Principal", usd(l.principalUsd)),
-      kv("APR", meta ? pct(meta.aprPct) : "Not recorded"),
+      kv("APR", meta ? pct(meta.aprPct) : l.aprPct !== undefined ? pct(l.aprPct) : "Not recorded"),
       kv("Weekly payment", usd(l.weeklyPaymentUsd)),
       kv("Weeks left", meta ? `${l.weeksRemaining} of ${meta.termWeeks}` : String(l.weeksRemaining)),
     );
