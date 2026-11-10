@@ -9,7 +9,7 @@ function hours(
   study = 0,
   sideProject = 0,
 ): WeekInput {
-  return { hours: { work, hustle, rest, study, sideProject } };
+  return { hours: { work, hustle, rest, study, sideProject, skill: "" } };
 }
 
 // Helper to override specific GameState fields
@@ -204,7 +204,7 @@ describe("energy model", () => {
     it("rejects total hours > hoursPerWeek", () => {
       const state = newGame(1);
       expect(() =>
-        step(state, { hours: { work: 40, hustle: 30, rest: 20, study: 10, sideProject: 5 } }),
+        step(state, { hours: { work: 40, hustle: 30, rest: 20, study: 10, sideProject: 5, skill: "" } }),
       ).toThrow();
     });
 
@@ -217,7 +217,7 @@ describe("energy model", () => {
       const state = newGame(1);
       // 40 + 10 + 40 + 5 + 5 = 100
       expect(() =>
-        step(state, { hours: { work: 40, hustle: 10, rest: 40, study: 5, sideProject: 5 } }),
+        step(state, { hours: { work: 40, hustle: 10, rest: 40, study: 5, sideProject: 5, skill: "" } }),
       ).not.toThrow();
     });
   });

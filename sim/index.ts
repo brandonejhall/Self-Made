@@ -35,7 +35,9 @@ export function newGame(seed: number, cityId: CityId = "kingston"): GameState {
 }
 
 export function validateInput(state: GameState, input: WeekInput): string | null {
-  const { work, hustle, rest, study, sideProject } = input.hours;
+  const { work, hustle, rest } = input.hours;
+  const study = input.hours.study ?? 0;
+  const sideProject = input.hours.sideProject ?? 0;
   if ([work, hustle, rest, study, sideProject].some((h) => h < 0))
     return "Hours cannot be negative";
   if (work + hustle + rest + study + sideProject > CONFIG.time.hoursPerWeek) {
@@ -53,11 +55,38 @@ export function step(state: GameState, input: WeekInput): GameState {
   if (error) throw new Error(error);
 
   const city = CONFIG.cities[state.cityId];
-  const { work, hustle, rest, study, sideProject } = input.hours;
+  const { work, hustle, rest } = input.hours;
+  const study = input.hours.study ?? 0;
+  const sideProject = input.hours.sideProject ?? 0;
+  const skill = input.hours.skill ?? "";
 
+  // --- Skills increment ---
+  const newSkills = { ...state.skills };
+  if (study > 0 && skill !== "") {
+    newSkills[skill] = (newSkills[skill] ?? 0) + Math.floor(study);
+  }
+
+  // --- financial skill unlock flag ---
+  let flags = { ...state.flags };
+  if ((newSkills["financial"] ?? 0) >= CONFIG.skills.financialBusinessUnlockLevel) {
+    flags = { ...flags, skill_financial_unlocked: true };
+  }
+
+  // --- Hustle rate with skill-based ceiling and reputation modifier ---
   const [roll, rngState] = nextRandom(state.rngState);
-  const hustleRate =
-    city.hustleHourlyMinUsd + roll * (city.hustleHourlyMaxUsd - city.hustleHourlyMinUsd);
+  const hustleCeiling = Math.min(
+    city.hustleHourlyMaxUsd + CONFIG.skills.hustleWageCeilingPerPoint * (state.skills["hustle"] ?? 0),
+    city.hustleAbsoluteCeiling,
+  );
+  let hustleRate = city.hustleHourlyMinUsd + roll * (hustleCeiling - city.hustleHourlyMinUsd);
+
+  // Reputation modifier: above 50 adds 1% per point, below 50 subtracts 0.5% per point
+  const repDelta = state.reputation - 50;
+  const repMult =
+    repDelta >= 0
+      ? 1 + repDelta * CONFIG.reputation.hustleBonus
+      : 1 + repDelta * CONFIG.reputation.hustlePenalty;
+  hustleRate = hustleRate * repMult;
 
   // Burnout productivity penalty applies if energy is below threshold at the START of the week
   const productivityMult =
@@ -84,7 +113,6 @@ export function step(state: GameState, input: WeekInput): GameState {
   const burnoutWeeks = newEnergy <= 0 ? state.burnoutWeeks + 1 : 0;
 
   // burnout_active flag lifecycle
-  let flags = { ...state.flags };
   if (burnoutWeeks >= 2) {
     flags = { ...flags, burnout_active: true };
   }
@@ -109,6 +137,7 @@ export function step(state: GameState, input: WeekInput): GameState {
     burnoutWeeks: finalBurnoutWeeks,
     history: state.history,
     flags,
+    skills: newSkills,
   };
 }
 
@@ -116,6 +145,19 @@ export function netWorthUsd(state: GameState): number {
   const assetValue = state.assets.reduce((sum, a) => sum + a.bookValueUsd, 0);
   const liabilityValue = state.liabilities.reduce((sum, l) => sum + l.principalUsd, 0);
   return round2(state.cashUsd + assetValue - liabilityValue);
+}
+
+export function effectiveLoanApr(state: GameState): number {
+  const reduction = (state.skills["negotiation"] ?? 0) * CONFIG.loans.aprReductionPerSkillPoint;
+  return Math.max(CONFIG.loans.baseAprPct - reduction, CONFIG.loans.minAprPct);
+}
+
+export function effectiveHustleCeiling(state: GameState): number {
+  const city = CONFIG.cities[state.cityId];
+  return Math.min(
+    city.hustleHourlyMaxUsd + CONFIG.skills.hustleWageCeilingPerPoint * (state.skills["hustle"] ?? 0),
+    city.hustleAbsoluteCeiling,
+  );
 }
 
 export function serialize(state: GameState): string {

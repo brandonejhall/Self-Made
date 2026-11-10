@@ -50,7 +50,8 @@ export interface WeekInput {
     work: number;
     hustle: number;
     rest: number;
-    study: number;
-    sideProject: number;
+    study?: number;      // defaults to 0 when omitted
+    sideProject?: number; // defaults to 0 when omitted
+    skill?: string;      // which skill study hours go toward; omit or empty string means no skill study
   };
 }
