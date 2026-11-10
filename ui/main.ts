@@ -1,45 +1,351 @@
-// Placeholder UI so the build works end to end. ui-engineer replaces this
-// with the Stage 1 phone UI once the GDD defines the screens.
+// SM-012: Phone UI — Home/Week Summary and Hour Allocator
 
-import { deserialize, newGame, serialize, step, type GameState } from "../sim";
+import {
+  newGame,
+  step,
+  serialize,
+  deserialize,
+  CONFIG,
+  type GameState,
+  type WeekInput,
+} from "../sim";
+
+// ── Constants ──────────────────────────────────────────────────────────────
 
 const SAVE_KEY = "self-made-save";
+const TOTAL_HOURS = 100;
+
+interface HourAllocation {
+  work: number;
+  hustle: number;
+  rest: number;
+  study: number;
+  sideProject: number;
+}
+
+const HOUR_FIELDS: Array<{ key: keyof HourAllocation; label: string }> = [
+  { key: "work", label: "Work" },
+  { key: "hustle", label: "Hustle" },
+  { key: "rest", label: "Rest" },
+  { key: "study", label: "Study" },
+  { key: "sideProject", label: "Side Project" },
+];
+
+const SKILL_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "", label: "None" },
+  { value: "hustle", label: "Hustle" },
+  { value: "negotiation", label: "Negotiation" },
+  { value: "financial", label: "Financial" },
+  { value: "trade", label: "Trade" },
+];
+
+// ── Mutable module state ───────────────────────────────────────────────────
+
+let state: GameState = load();
+let prevState: GameState | null = null;
+
+// Default allocation sums to exactly 100 so the button starts enabled
+let hours: HourAllocation = { work: 40, hustle: 10, rest: 40, study: 5, sideProject: 5 };
+let skill = "";
+
+// ── Persistence ───────────────────────────────────────────────────────────
 
 function load(): GameState {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) return deserialize(raw);
   } catch {
-    // Storage unavailable or save corrupt: start fresh.
+    // Storage unavailable or save corrupt — start fresh
   }
-  return newGame(Date.now() % 1_000_000);
+  return newGame(Date.now() >>> 0, "kingston");
 }
 
-function save(state: GameState): void {
+function save(s: GameState): void {
   try {
-    localStorage.setItem(SAVE_KEY, serialize(state));
+    localStorage.setItem(SAVE_KEY, serialize(s));
   } catch {
-    // Storage unavailable: the game still runs in memory.
+    // Storage unavailable — game still runs in memory
   }
 }
 
-let state = load();
-const app = document.getElementById("app")!;
+// ── Helpers ───────────────────────────────────────────────────────────────
 
-function render(): void {
-  app.innerHTML = `
-    <main class="phone">
-      <h1>Self Made</h1>
-      <p>Age ${state.age} · Week ${state.week}</p>
-      <p class="cash">$${state.cashUsd.toLocaleString("en-US")}</p>
-      <p>Energy ${Math.round(state.energy)}</p>
-      <button id="next">Work the week</button>
-    </main>`;
-  document.getElementById("next")!.onclick = () => {
-    state = step(state, { hours: { work: 45, hustle: 10, rest: 45 } });
-    save(state);
-    render();
-  };
+function formatCash(n: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
 }
 
-render();
+function getYear(s: GameState): number {
+  return CONFIG.start.year + Math.floor(s.week / CONFIG.time.weeksPerYear);
+}
+
+function energyFillClass(e: number): string {
+  if (e > 50) return "energy-bar__fill energy-bar__fill--green";
+  if (e >= 20) return "energy-bar__fill energy-bar__fill--yellow";
+  return "energy-bar__fill energy-bar__fill--red";
+}
+
+function getAllocatedTotal(): number {
+  return hours.work + hours.hustle + hours.rest + hours.study + hours.sideProject;
+}
+
+function remainingText(r: number): string {
+  if (r === 0) return "100 / 100 — ready!";
+  if (r > 0) return `${r} hours left to allocate`;
+  return `${-r} hours over budget`;
+}
+
+function setHour(key: keyof HourAllocation, value: number): void {
+  hours[key] = value;
+}
+
+// ── DOM creation ──────────────────────────────────────────────────────────
+
+function buildAllocatorFields(): string {
+  return HOUR_FIELDS.map(
+    ({ key, label }) => `
+      <div class="hour-input">
+        <span class="hour-label">${label}</span>
+        <div class="hour-controls">
+          <button id="btn-${key}-minus" class="stepper-btn" aria-label="Decrease ${label}">−</button>
+          <input
+            id="input-${key}"
+            type="number"
+            class="hour-num"
+            min="0"
+            value="${hours[key]}"
+            aria-label="${label} hours"
+          />
+          <button id="btn-${key}-plus" class="stepper-btn" aria-label="Increase ${label}">+</button>
+        </div>
+      </div>`,
+  ).join("");
+}
+
+function buildSkillOptions(): string {
+  return SKILL_OPTIONS.map(
+    ({ value, label }) =>
+      `<option value="${value}">${label}</option>`,
+  ).join("");
+}
+
+function createDOM(): void {
+  const app = document.getElementById("app");
+  if (!app) return;
+
+  app.innerHTML = `
+    <div class="phone">
+
+      <!-- ── Home / Week Summary ── -->
+      <div id="screen-home" class="screen screen--active">
+        <header class="phone-header">
+          <h1 class="app-title">Self Made</h1>
+        </header>
+
+        <div class="stat-card">
+          <span class="stat-label">Cash</span>
+          <div id="stat-cash" class="stat-cash">$0.00</div>
+          <div id="stat-delta" class="stat-delta" aria-live="polite"></div>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Energy</span>
+          <div class="energy-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+            <div id="energy-fill" class="energy-bar__fill energy-bar__fill--green" style="width:70%"></div>
+          </div>
+          <div id="stat-energy-val" class="stat-energy-val">70 / 100</div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-item">
+            <span class="stat-label">Rep</span>
+            <span id="stat-rep" class="stat-val">10</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Age</span>
+            <span id="stat-age" class="stat-val">21</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Year</span>
+            <span id="stat-year" class="stat-val">2026</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Week</span>
+            <span id="stat-week" class="stat-val">0</span>
+          </div>
+        </div>
+
+        <button id="btn-plan" class="btn-primary">Plan Week →</button>
+      </div>
+
+      <!-- ── Hour Allocator ── -->
+      <div id="screen-allocator" class="screen">
+        <header class="phone-header">
+          <button id="btn-back" class="btn-back">← Back</button>
+          <h2 class="screen-title">Plan Your Week</h2>
+        </header>
+
+        <div id="hours-remaining" class="remaining"></div>
+
+        ${buildAllocatorFields()}
+
+        <div class="skill-selector">
+          <label class="stat-label" for="select-skill">Study skill</label>
+          <select id="select-skill" class="skill-select">
+            ${buildSkillOptions()}
+          </select>
+        </div>
+
+        <button id="btn-advance" class="btn-primary">Advance Week</button>
+      </div>
+
+    </div>`;
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────
+
+function renderHome(): void {
+  (document.getElementById("stat-cash") as HTMLElement).textContent =
+    formatCash(state.cashUsd);
+
+  const e = Math.round(state.energy);
+  const fill = document.getElementById("energy-fill") as HTMLElement;
+  fill.style.width = `${e}%`;
+  fill.className = energyFillClass(state.energy);
+  fill.setAttribute("aria-valuenow", String(e));
+
+  (document.getElementById("stat-energy-val") as HTMLElement).textContent =
+    `${e} / 100`;
+
+  (document.getElementById("stat-rep") as HTMLElement).textContent =
+    String(state.reputation);
+  (document.getElementById("stat-age") as HTMLElement).textContent =
+    String(state.age);
+  (document.getElementById("stat-year") as HTMLElement).textContent =
+    String(getYear(state));
+  (document.getElementById("stat-week") as HTMLElement).textContent =
+    String(state.week);
+
+  const deltaEl = document.getElementById("stat-delta") as HTMLElement;
+  if (prevState !== null && state.week > 0) {
+    const cashDelta = state.cashUsd - prevState.cashUsd;
+    const energyDelta = state.energy - prevState.energy;
+    const cashSign = cashDelta >= 0 ? "+" : "";
+    const energySign = energyDelta >= 0 ? "+" : "";
+    const cashCls = cashDelta >= 0 ? "delta--pos" : "delta--neg";
+    const energyCls = energyDelta >= 0 ? "delta--pos" : "delta--neg";
+    deltaEl.innerHTML =
+      `<span class="${cashCls}">${cashSign}${formatCash(cashDelta)}</span>` +
+      `<span class="delta-sep"> | </span>` +
+      `<span class="${energyCls}">${energySign}${Math.round(energyDelta)} energy</span>`;
+    deltaEl.style.display = "";
+  } else {
+    deltaEl.style.display = "none";
+    deltaEl.textContent = "";
+  }
+}
+
+function renderAllocator(): void {
+  const remaining = TOTAL_HOURS - getAllocatedTotal();
+  const remEl = document.getElementById("hours-remaining") as HTMLElement;
+  remEl.textContent = remainingText(remaining);
+  remEl.className = `remaining${remaining !== 0 ? " remaining--over" : ""}`;
+
+  const advBtn = document.getElementById("btn-advance") as HTMLButtonElement;
+  advBtn.disabled = remaining !== 0;
+
+  HOUR_FIELDS.forEach(({ key }) => {
+    const el = document.getElementById(`input-${key}`) as HTMLInputElement | null;
+    if (el) el.value = String(hours[key]);
+  });
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────
+
+function showScreen(id: "screen-home" | "screen-allocator"): void {
+  document.querySelectorAll<HTMLDivElement>(".screen").forEach((el) => {
+    el.classList.toggle("screen--active", el.id === id);
+  });
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────
+
+function advanceWeek(): void {
+  const input: WeekInput = {
+    hours: {
+      work: hours.work,
+      hustle: hours.hustle,
+      rest: hours.rest,
+      study: hours.study,
+      sideProject: hours.sideProject,
+      skill: skill,
+    },
+  };
+
+  prevState = state;
+  // step() returns { state, pendingEvents }; events handled in SM-013
+  const { state: newState } = step(state, input, []);
+  state = newState;
+  save(state);
+  showScreen("screen-home");
+  renderHome();
+}
+
+// ── Event wiring ──────────────────────────────────────────────────────────
+
+function wireEvents(): void {
+  document.getElementById("btn-plan")!.addEventListener("click", () => {
+    showScreen("screen-allocator");
+    renderAllocator();
+  });
+
+  document.getElementById("btn-back")!.addEventListener("click", () => {
+    showScreen("screen-home");
+  });
+
+  HOUR_FIELDS.forEach(({ key }) => {
+    document.getElementById(`btn-${key}-minus`)!.addEventListener("click", () => {
+      if (hours[key] > 0) {
+        setHour(key, hours[key] - 1);
+        renderAllocator();
+      }
+    });
+
+    document.getElementById(`btn-${key}-plus`)!.addEventListener("click", () => {
+      setHour(key, hours[key] + 1);
+      renderAllocator();
+    });
+
+    const inputEl = document.getElementById(`input-${key}`) as HTMLInputElement;
+    inputEl.addEventListener("input", () => {
+      const v = parseInt(inputEl.value, 10);
+      if (!isNaN(v) && v >= 0) {
+        setHour(key, v);
+        renderAllocator();
+      }
+    });
+  });
+
+  const skillSelect = document.getElementById("select-skill") as HTMLSelectElement;
+  skillSelect.addEventListener("change", () => {
+    skill = skillSelect.value;
+  });
+
+  document.getElementById("btn-advance")!.addEventListener("click", advanceWeek);
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────
+
+function init(): void {
+  createDOM();
+  wireEvents();
+  renderHome();
+  renderAllocator();
+  showScreen("screen-home");
+}
+
+init();

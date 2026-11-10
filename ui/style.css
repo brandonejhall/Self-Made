@@ -1,3 +1,5 @@
+/* ── Base ─────────────────────────────────────────────────────────────── */
+
 :root {
   color-scheme: dark;
   font-family: system-ui, -apple-system, sans-serif;
@@ -7,26 +9,278 @@ body {
   margin: 0;
   background: #0d0d0f;
   color: #f2f2f2;
+  /* prevent horizontal scroll on narrow viewports */
+  overflow-x: hidden;
 }
+
+/* ── Phone shell ────────────────────────────────────────────────────── */
 
 .phone {
   max-width: 390px;
   margin: 0 auto;
-  padding: 24px 20px;
+  /* no horizontal padding here — screens handle their own gutter */
 }
 
-.cash {
+/* ── Screens ─────────────────────────────────────────────────────────── */
+
+.screen {
+  display: none;
+}
+
+.screen--active {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 16px 32px;
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+
+.phone-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.app-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.screen-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ── Stat cards ──────────────────────────────────────────────────────── */
+
+.stat-card {
+  background: #18181b;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.stat-cash {
   font-size: 2.5rem;
   font-weight: 700;
-  margin: 8px 0;
+  letter-spacing: -0.03em;
+  margin: 4px 0 2px;
+  line-height: 1.1;
 }
 
-button {
+.stat-delta {
+  font-size: 0.875rem;
+  margin-top: 4px;
+}
+
+.delta--pos { color: #4ade80; }
+.delta--neg { color: #f87171; }
+.delta-sep  { color: #555; }
+
+.stat-energy-val {
+  font-size: 0.8rem;
+  color: #aaa;
+  margin-top: 4px;
+}
+
+/* ── Energy bar ──────────────────────────────────────────────────────── */
+
+.energy-bar {
   width: 100%;
-  padding: 14px;
-  font-size: 1rem;
-  border: 0;
+  height: 10px;
+  background: #2a2a2e;
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 8px 0 2px;
+}
+
+.energy-bar__fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.4s ease, background-color 0.4s ease;
+}
+
+.energy-bar__fill--green  { background: #4ade80; }
+.energy-bar__fill--yellow { background: #fbbf24; }
+.energy-bar__fill--red    { background: #f87171; }
+
+/* ── Stat row (Rep / Age / Year / Week) ──────────────────────────────── */
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.stat-item {
+  background: #18181b;
   border-radius: 12px;
+  padding: 12px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-val {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+
+/* Keep the original global rule so the existing code still compiles */
+button {
+  font-family: inherit;
+}
+
+.btn-primary {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 0;
+  border-radius: 14px;
   background: #f2f2f2;
   color: #0d0d0f;
+  cursor: pointer;
+  margin-top: auto;
+  text-align: center;
+}
+
+.btn-primary:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-back {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ── Remaining counter ───────────────────────────────────────────────── */
+
+.remaining {
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 12px 16px;
+  background: #18181b;
+  border-radius: 12px;
+  color: #4ade80;
+  transition: color 0.2s ease;
+}
+
+.remaining--over {
+  color: #f87171;
+}
+
+/* ── Hour inputs ─────────────────────────────────────────────────────── */
+
+.hour-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #18181b;
+  border-radius: 12px;
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+.hour-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  flex: 1;
+}
+
+.hour-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepper-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #333;
+  background: #2a2a2e;
+  color: #f2f2f2;
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  /* override global button width rule */
+  flex-shrink: 0;
+}
+
+.stepper-btn:active {
+  background: #3a3a3e;
+}
+
+.hour-num {
+  width: 54px;
+  text-align: center;
+  background: #0d0d0f;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #f2f2f2;
+  font-size: 1rem;
+  padding: 7px 4px;
+  /* hide native spinners */
+  -moz-appearance: textfield;
+}
+
+.hour-num::-webkit-outer-spin-button,
+.hour-num::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ── Skill selector ──────────────────────────────────────────────────── */
+
+.skill-selector {
+  background: #18181b;
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.skill-select {
+  width: 100%;
+  background: #0d0d0f;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #f2f2f2;
+  font-size: 1rem;
+  padding: 8px 10px;
+  margin-top: 8px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
 }
