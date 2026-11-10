@@ -1,4 +1,4 @@
-// SM-012 / SM-013 / SM-014: Phone UI
+// SM-012 / SM-013 / SM-014 / SM-023: Phone UI
 
 import {
   newGame,
@@ -6,6 +6,7 @@ import {
   applyEvent,
   loadEvents,
   netWorthUsd,
+  validateInput,
   serialize,
   deserialize,
   CONFIG,
@@ -16,11 +17,13 @@ import {
 } from "../sim";
 
 import { ALL_EVENT_DATA } from "../content";
+import { PHONE_APPS, type AppContext, type PhoneApp, type SimAction, type UiMeta } from "./apps";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const SAVE_KEY = "self-made-save";
 const WORTH_KEY = "self-made-nw";
+const META_KEY = "self-made-ui-meta";
 const TOTAL_HOURS = 100;
 
 const EVENTS: GameEvent[] = loadEvents(ALL_EVENT_DATA as Parameters<typeof loadEvents>[0]);
@@ -55,6 +58,10 @@ let state: GameState = load();
 let prevState: GameState | null = null;
 let pendingEvents: GameEvent[] = [];
 let nwHistory: number[] = loadNwHistory();
+let uiMeta: UiMeta = loadUiMeta();
+
+let openAppId: string | null = null;
+let appFlash: { kind: "ok" | "error"; text: string } | null = null;
 
 let hours: HourAllocation = { work: 40, hustle: 10, rest: 40, study: 5, sideProject: 5 };
 let skill = "";
@@ -92,6 +99,28 @@ function loadNwHistory(): number[] {
 function saveNwHistory(): void {
   try {
     localStorage.setItem(WORTH_KEY, JSON.stringify(nwHistory));
+  } catch {
+    // ignore
+  }
+}
+
+// UI-only metadata (for example the APR a loan was taken at). Never game outcomes.
+function loadUiMeta(): UiMeta {
+  try {
+    const raw = localStorage.getItem(META_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<UiMeta>;
+      return { loans: parsed.loans ?? {} };
+    }
+  } catch {
+    // ignore
+  }
+  return { loans: {} };
+}
+
+function saveUiMeta(): void {
+  try {
+    localStorage.setItem(META_KEY, JSON.stringify(uiMeta));
   } catch {
     // ignore
   }
@@ -168,6 +197,17 @@ function buildSkillOptions(): string {
   ).join("");
 }
 
+function buildAppTiles(): string {
+  return PHONE_APPS.map(
+    (app) => `
+      <button class="app-tile${app.placeholder ? " app-tile--soon" : ""}" data-app="${app.id}">
+        <span class="app-tile__icon">${app.icon}</span>
+        <span class="app-tile__name">${app.name}</span>
+        ${app.placeholder ? `<span class="app-tile__soon">Soon</span>` : ""}
+      </button>`,
+  ).join("");
+}
+
 function createDOM(): void {
   const app = document.getElementById("app");
   if (!app) return;
@@ -218,7 +258,22 @@ function createDOM(): void {
           </div>
         </div>
 
+        <nav class="app-grid" aria-label="Phone apps">
+          ${buildAppTiles()}
+        </nav>
+
         <button id="btn-plan" class="btn-primary">Plan Week →</button>
+      </div>
+
+      <!-- ── Phone app (Jobs / Bank / Housing / Business / Property) ── -->
+      <div id="screen-app" class="screen">
+        <header class="phone-header">
+          <button id="btn-app-back" class="btn-back">← Back</button>
+          <h2 id="app-title" class="screen-title"></h2>
+          <span id="app-cash" class="app-cash"></span>
+        </header>
+        <div id="app-flash" class="app-flash" role="status" aria-live="polite"></div>
+        <div id="app-body" class="app-body"></div>
       </div>
 
       <!-- ── Hour Allocator ── -->
@@ -229,6 +284,7 @@ function createDOM(): void {
         </header>
 
         <div id="hours-remaining" class="remaining"></div>
+        <div id="hours-error" class="app-flash app-flash--error" role="alert"></div>
 
         ${buildAllocatorFields()}
 
@@ -322,8 +378,14 @@ function renderAllocator(): void {
   remEl.textContent = remainingText(remaining);
   remEl.className = `remaining${remaining !== 0 ? " remaining--over" : ""}`;
 
+  // The sim decides which allocations are legal (job hustle cap, burnout cap).
+  const simError = remaining === 0 ? validateInput(state, buildWeekInput()) : null;
+  const errEl = document.getElementById("hours-error") as HTMLElement;
+  errEl.textContent = simError ?? "";
+  errEl.style.display = simError ? "" : "none";
+
   const advBtn = document.getElementById("btn-advance") as HTMLButtonElement;
-  advBtn.disabled = remaining !== 0;
+  advBtn.disabled = remaining !== 0 || simError !== null;
 
   HOUR_FIELDS.forEach(({ key }) => {
     const el = document.getElementById(`input-${key}`) as HTMLInputElement | null;
@@ -447,7 +509,13 @@ function renderHistoryLog(): void {
 
 // ── Navigation ────────────────────────────────────────────────────────────
 
-type ScreenId = "screen-home" | "screen-allocator" | "screen-event" | "screen-chart" | "screen-history";
+type ScreenId =
+  | "screen-home"
+  | "screen-allocator"
+  | "screen-event"
+  | "screen-chart"
+  | "screen-history"
+  | "screen-app";
 
 function showScreen(id: ScreenId): void {
   document.querySelectorAll<HTMLDivElement>(".screen").forEach((el) => {
@@ -457,8 +525,8 @@ function showScreen(id: ScreenId): void {
 
 // ── Actions ───────────────────────────────────────────────────────────────
 
-function advanceWeek(): void {
-  const input: WeekInput = {
+function buildWeekInput(): WeekInput {
+  return {
     hours: {
       work: hours.work,
       hustle: hours.hustle,
@@ -468,9 +536,23 @@ function advanceWeek(): void {
       skill: skill as string,
     },
   };
+}
+
+function advanceWeek(): void {
+  const input = buildWeekInput();
+
+  let result: ReturnType<typeof step>;
+  try {
+    result = step(state, input, EVENTS);
+  } catch (err) {
+    const errEl = document.getElementById("hours-error") as HTMLElement;
+    errEl.textContent = err instanceof Error ? err.message : String(err);
+    errEl.style.display = "";
+    return;
+  }
 
   prevState = state;
-  const { state: newState, pendingEvents: fired } = step(state, input, EVENTS);
+  const { state: newState, pendingEvents: fired } = result;
   state = newState;
   save(state);
 
@@ -499,6 +581,55 @@ function resolveEvent(evt: GameEvent, choiceIndex: number): void {
     showScreen("screen-home");
     renderHome();
   }
+}
+
+// ── Phone apps ────────────────────────────────────────────────────────────
+
+const appContext: AppContext = {
+  getState: () => state,
+  run(action: SimAction, successMessage: string): boolean {
+    const [next, error] = action(state);
+    if (error) {
+      appFlash = { kind: "error", text: error };
+      renderApp();
+      return false;
+    }
+    state = next;
+    save(state);
+    saveUiMeta();
+    appFlash = { kind: "ok", text: successMessage };
+    renderApp();
+    return true;
+  },
+  meta: uiMeta,
+};
+
+function findApp(id: string | null): PhoneApp | undefined {
+  return PHONE_APPS.find((a) => a.id === id);
+}
+
+function openApp(id: string): void {
+  openAppId = id;
+  appFlash = null;
+  renderApp();
+  showScreen("screen-app");
+  window.scrollTo(0, 0);
+}
+
+function renderApp(): void {
+  const app = findApp(openAppId);
+  if (!app) return;
+  (document.getElementById("app-title") as HTMLElement).textContent = app.name;
+  (document.getElementById("app-cash") as HTMLElement).textContent = formatCash(state.cashUsd);
+
+  const flashEl = document.getElementById("app-flash") as HTMLElement;
+  flashEl.textContent = appFlash?.text ?? "";
+  flashEl.className = `app-flash${appFlash ? ` app-flash--${appFlash.kind}` : ""}`;
+  flashEl.style.display = appFlash ? "" : "none";
+
+  const body = document.getElementById("app-body") as HTMLElement;
+  body.replaceChildren();
+  app.render(body, appContext);
 }
 
 // ── Event wiring ──────────────────────────────────────────────────────────
@@ -531,6 +662,17 @@ function wireEvents(): void {
     showScreen("screen-home");
   });
 
+  document.querySelectorAll<HTMLButtonElement>(".app-tile").forEach((tile) => {
+    tile.addEventListener("click", () => openApp(tile.dataset["app"] ?? ""));
+  });
+
+  document.getElementById("btn-app-back")!.addEventListener("click", () => {
+    openAppId = null;
+    appFlash = null;
+    renderHome();
+    showScreen("screen-home");
+  });
+
   HOUR_FIELDS.forEach(({ key }) => {
     document.getElementById(`btn-${key}-minus`)!.addEventListener("click", () => {
       if (hours[key] > 0) {
@@ -557,6 +699,7 @@ function wireEvents(): void {
   const skillSelect = document.getElementById("select-skill") as HTMLSelectElement;
   skillSelect.addEventListener("change", () => {
     skill = skillSelect.value;
+    renderAllocator();
   });
 
   document.getElementById("btn-advance")!.addEventListener("click", advanceWeek);
