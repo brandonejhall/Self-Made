@@ -55,7 +55,7 @@ for await (const raw of rl) {
   if (cmd === "h") {
     const [w, h, r] = args.map(Number);
     const input: WeekInput = { hours: { work: w ?? 0, hustle: h ?? 0, rest: r ?? 0 } };
-    const error = validateInput(input);
+    const error = validateInput(state, input);
     if (error) {
       console.log(error);
       prompt();
@@ -70,7 +70,7 @@ for await (const raw of rl) {
     continue;
   }
 
-  for (let i = 0; i < weeks; i++) state = step(state, last);
+  for (let i = 0; i < weeks; i++) ({ state } = step(state, last));
   prompt();
 }
 
