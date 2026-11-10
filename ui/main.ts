@@ -15,13 +15,7 @@ import {
   type HistoryEntry,
 } from "../sim";
 
-import familyRaw from "../content/events/stage1_family.json";
-import finOppRaw from "../content/events/stage1_financial_opportunity.json";
-import finThreatRaw from "../content/events/stage1_financial_threat.json";
-import relationshipRaw from "../content/events/stage1_relationship.json";
-import worldClockRaw from "../content/events/stage1_world_clock.json";
-import consequenceRaw from "../content/events/stage1_consequence.json";
-import hustleWorkRaw from "../content/events/stage1_hustle_work.json";
+import { ALL_EVENT_DATA } from "../content";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -29,15 +23,7 @@ const SAVE_KEY = "self-made-save";
 const WORTH_KEY = "self-made-nw";
 const TOTAL_HOURS = 100;
 
-const EVENTS: GameEvent[] = loadEvents([
-  ...familyRaw,
-  ...finOppRaw,
-  ...finThreatRaw,
-  ...relationshipRaw,
-  ...worldClockRaw,
-  ...consequenceRaw,
-  ...hustleWorkRaw,
-]);
+const EVENTS: GameEvent[] = loadEvents(ALL_EVENT_DATA as Parameters<typeof loadEvents>[0]);
 
 interface HourAllocation {
   work: number;

@@ -4,6 +4,7 @@
 import Ajv from "ajv";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { EVENT_FILES } from "./index";
 
 const root = new URL(".", import.meta.url).pathname;
 const schema = JSON.parse(readFileSync(join(root, "schema/event.schema.json"), "utf8"));
@@ -15,6 +16,10 @@ let errors = 0;
 let count = 0;
 
 for (const file of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
+  if (!(file in EVENT_FILES)) {
+    errors++;
+    console.error(`${file}: not listed in content/index.ts, so the game never loads it`);
+  }
   const events = JSON.parse(readFileSync(join(dir, file), "utf8"));
   if (!Array.isArray(events)) {
     console.error(`${file}: top level must be an array`);
