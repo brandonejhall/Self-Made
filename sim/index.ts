@@ -6,7 +6,7 @@ import type { GameState, WeekInput } from "./types";
 
 export type { GameState, WeekInput, HistoryEntry, Asset, Liability } from "./types";
 export { CONFIG } from "./config";
-import type { HistoryEntry, Liability } from "./types";
+import type { Asset, HistoryEntry, Liability } from "./types";
 
 export function newGame(seed: number, cityId: CityId = "kingston"): GameState {
   return {
@@ -93,8 +93,16 @@ export function step(state: GameState, input: WeekInput): GameState {
   const productivityMult =
     state.energy < CONFIG.energy.burnoutThreshold ? CONFIG.energy.burnoutProductivityMult : 1;
 
-  const income =
+  const workHustleIncome =
     work * city.baseHourlyWageUsd * productivityMult + hustle * hustleRate * productivityMult;
+
+  // Passive income from business assets
+  const businessIncome = state.assets.reduce(
+    (sum, a) => sum + (a.weeklyIncomeUsd ?? 0),
+    0,
+  );
+
+  const income = workHustleIncome + businessIncome;
 
   const rent = CONFIG.cities.kingston.housingTiers[state.housingTier]!.weeklyRentUsd;
   const costs = rent + city.weeklyLivingCostUsd;
@@ -179,7 +187,9 @@ export function step(state: GameState, input: WeekInput): GameState {
       : burnoutWeeks;
 
   const week = state.week + 1;
-  return {
+
+  // Build intermediate state to compute final net worth for wealthTier
+  const updatedState = {
     ...state,
     rngState,
     week,
@@ -195,12 +205,77 @@ export function step(state: GameState, input: WeekInput): GameState {
     housingTier,
     trust,
   };
+
+  // Recalculate wealthTier from final net worth
+  const finalNetWorth = netWorthUsd(updatedState);
+  const newWealthTier = computeWealthTier(finalNetWorth);
+  const finalFlags =
+    newWealthTier >= 2
+      ? { ...flags, stage2_unlocked: true }
+      : flags;
+
+  return {
+    ...updatedState,
+    wealthTier: newWealthTier,
+    flags: finalFlags,
+  };
 }
 
 export function netWorthUsd(state: GameState): number {
   const assetValue = state.assets.reduce((sum, a) => sum + a.bookValueUsd, 0);
   const liabilityValue = state.liabilities.reduce((sum, l) => sum + l.principalUsd, 0);
   return round2(state.cashUsd + assetValue - liabilityValue);
+}
+
+function computeWealthTier(nw: number): number {
+  if (nw >= CONFIG.progression.tier2Threshold) return 2;
+  if (nw >= CONFIG.progression.tier1Threshold) return 1;
+  return 0;
+}
+
+export function launchBusiness(
+  state: GameState,
+  businessTypeId: string,
+): [GameState, string | null] {
+  if (state.wealthTier < 1) {
+    return [state, "Business launch requires Tier 1 (net worth >= $10,000)"];
+  }
+  if (!state.flags.skill_financial_unlocked) {
+    return [state, "Business launch requires financial skill >= 3"];
+  }
+  const bizType = CONFIG.businesses.types.find((b) => b.id === businessTypeId);
+  if (!bizType) {
+    return [state, `Unknown business type: ${businessTypeId}`];
+  }
+  if (state.cashUsd < bizType.launchCostUsd) {
+    return [state, `Need $${bizType.launchCostUsd} to launch ${businessTypeId}`];
+  }
+
+  const asset: Asset = {
+    id: `biz_${businessTypeId}_${state.week}`,
+    type: businessTypeId,
+    bookValueUsd: bizType.launchCostUsd,
+    weeklyIncomeUsd: bizType.weeklyIncomeUsd,
+  };
+
+  const newHistory: HistoryEntry[] = [
+    ...state.history,
+    {
+      week: state.week,
+      action: `launched_business_${businessTypeId}`,
+      tags: [`launched_${businessTypeId}`],
+    },
+  ];
+
+  return [
+    {
+      ...state,
+      cashUsd: round2(state.cashUsd - bizType.launchCostUsd),
+      assets: [...state.assets, asset],
+      history: newHistory,
+    },
+    null,
+  ];
 }
 
 export function effectiveLoanApr(state: GameState): number {

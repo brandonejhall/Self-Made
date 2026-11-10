@@ -13,6 +13,18 @@ Every agent reads this first and updates it last.
 
 - Nothing.
 
+## SM-007 changes
+
+- `sim/index.ts` `step()`: passive business income added before computing `newCashAfterAll`. All `asset.weeklyIncomeUsd` values are summed and included in `income` each week (assets without `weeklyIncomeUsd` contribute 0 via `?? 0`).
+- `sim/index.ts` `step()`: `wealthTier` recalculated at the end of `step()` from the fully-updated state's net worth using new `computeWealthTier(nw)` helper. `stage2_unlocked` flag is set in `flags` when `newWealthTier >= 2`.
+- `sim/index.ts` exports new `launchBusiness(state, businessTypeId): [GameState, string | null]`:
+  - Returns error when `wealthTier < 1`.
+  - Returns error when `skill_financial_unlocked` flag is false.
+  - Returns error for unknown `businessTypeId`.
+  - Returns error when `cashUsd < bizType.launchCostUsd`.
+  - On success: deducts `launchCostUsd` from cash, appends `Asset` with `id = biz_<type>_<week>`, `bookValueUsd = launchCostUsd`, `weeklyIncomeUsd = bizType.weeklyIncomeUsd`, appends history entry with tag `launched_<businessTypeId>`.
+- `tests/sim/wealth.test.ts` added with 16 tests covering all acceptance criteria.
+
 ## SM-006 changes
 
 - `sim/index.ts` `step()`: rent line updated to use `CONFIG.cities.kingston.housingTiers[state.housingTier]!.weeklyRentUsd` instead of the placeholder tier-0 constant (removes the TODO comment).
@@ -77,3 +89,6 @@ Every agent reads this first and updates it last.
 | 2026-11-09 | Hustle ceiling uses state.skills (not newSkills) | Skills earned this week take effect next week; consistent with "you plan based on what you know at the start of the week" |
 | 2026-11-09 | takeLoan is a standalone function, not embedded in step() | Loans are player-initiated decisions, not automatic weekly events; keeping it outside step() preserves the pure (state, input) -> newState contract |
 | 2026-11-09 | Loan id uses week+amount composite | Deterministic, human-readable, unique within a typical game run |
+| 2026-11-09 | wealthTier computed at end of step() from final net worth | Ensures tier reflects all changes in the week (income, costs, eviction liabilities) before persisting; tier can increase or decrease each week |
+| 2026-11-09 | launchBusiness is a standalone function outside step() | Business launch is a player-initiated action; keeping it outside step() preserves the pure weekly-advance contract |
+| 2026-11-09 | Tier 2 test cash set to $1,001,000 not $1,000,000 | Weekly costs ($150 rent+living) would drop net worth below threshold after one step; test must account for this to remain deterministic |
