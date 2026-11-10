@@ -56,7 +56,8 @@ export function step(state: GameState, input: WeekInput): GameState {
     city.hustleHourlyMinUsd + roll * (city.hustleHourlyMaxUsd - city.hustleHourlyMinUsd);
 
   const income = work * city.baseHourlyWageUsd + hustle * hustleRate;
-  const costs = city.weeklyRentUsd + city.weeklyLivingCostUsd;
+  // TODO SM-006: use state.housingTier to select the correct rent tier
+  const costs = CONFIG.cities.kingston.housingTiers[0].weeklyRentUsd + city.weeklyLivingCostUsd;
 
   const energy = clamp(
     state.energy +

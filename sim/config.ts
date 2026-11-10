@@ -1,6 +1,5 @@
 // Every tunable number in the simulation lives here.
 // The pm sets targets. balance-qa recommends changes. sim-engineer applies them.
-// Placeholder values until the GDD defines the Stage 1 economy.
 
 export const CONFIG = {
   start: {
@@ -19,15 +18,76 @@ export const CONFIG = {
     restRecoveryPerHour: 0.6,
     workCostPerHour: 0.5,
     hustleCostPerHour: 0.8,
+    studyCostPerHour: 0.3,
+    sideProjectCostPerHour: 0.7,
+    burnoutThreshold: 20,
+    burnoutProductivityMult: 0.5,
+    burnoutActiveThreshold: 0,
+    burnoutClearThreshold: 50,
+    burnoutMaxHours: 40,
+    burnoutRecoveryMult: 0.5,
   },
   cities: {
     kingston: {
-      weeklyRentUsd: 90,
       weeklyLivingCostUsd: 60,
       baseHourlyWageUsd: 3.5,
       hustleHourlyMinUsd: 0,
       hustleHourlyMaxUsd: 9,
+      hustleSkillCeilingPerPoint: 0.5,
+      hustleAbsoluteCeiling: 25,
+      housingTiers: [
+        { weeklyRentUsd: 90,  depositUsd: 0,    cashRequiredUsd: 0 },
+        { weeklyRentUsd: 140, depositUsd: 280,  cashRequiredUsd: 500 },
+        { weeklyRentUsd: 220, depositUsd: 660,  cashRequiredUsd: 1500 },
+        { weeklyRentUsd: 320, depositUsd: 960,  cashRequiredUsd: 5000 },
+        { weeklyRentUsd: 0,   depositUsd: 10000, cashRequiredUsd: 20000 },
+      ],
+      jobs: [
+        { id: "gig",       minCommitHours: 0,  hourlyWageUsd: 3.50,  lossThresholdHours: 0,  lossConsecutiveWeeks: 0 },
+        { id: "part_time", minCommitHours: 20, hourlyWageUsd: 5.00,  lossThresholdHours: 15, lossConsecutiveWeeks: 2 },
+        { id: "full_time", minCommitHours: 40, hourlyWageUsd: 7.00,  lossThresholdHours: 30, lossConsecutiveWeeks: 2 },
+        { id: "skilled",   minCommitHours: 40, hourlyWageUsd: 12.00, lossThresholdHours: 30, lossConsecutiveWeeks: 2 },
+      ],
     },
+  },
+  loans: {
+    baseAprPct: 18,
+    minAprPct: 4,
+    aprReductionPerSkillPoint: 0.25,
+    amountTiers: [500, 1000, 2500, 5000],
+    termWeeksOptions: [26, 52],
+    maxSimultaneous: { 0: 1, 1: 2, 2: 3 } as Record<number, number>,
+    minReputation: 15,
+    emergencyMinCash: -2000,
+  },
+  businesses: {
+    types: [
+      { id: "food_stall",        launchCostUsd: 2000, weeklyIncomeUsd: 180, sector: "food" },
+      { id: "delivery_service",  launchCostUsd: 3500, weeklyIncomeUsd: 260, sector: "logistics" },
+      { id: "short_term_rental", launchCostUsd: 1500, weeklyIncomeUsd: 220, sector: "rental" },
+      { id: "content_brand",     launchCostUsd: 500,  weeklyIncomeUsd: 80,  sector: "content" },
+    ],
+  },
+  skills: {
+    hustleWageCeilingPerPoint: 0.5,
+    negotiationAprReductionPerPoint: 0.25,
+    financialBusinessUnlockLevel: 3,
+  },
+  reputation: {
+    hustleBonus: 0.01,
+    hustlePenalty: 0.005,
+    jobLossPenalty: 5,
+  },
+  progression: {
+    tier1Threshold: 10000,
+    tier2Threshold: 1000000,
+    overdueCashFloor: 0,
+    evictionOverdueCount: 2,
+    evictionForcedRepayPerWeek: 20,
+  },
+  events: {
+    maxPerWeek: 2,
+    defaultWeight: 10,
   },
 } as const;
 

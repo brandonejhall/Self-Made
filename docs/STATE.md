@@ -13,6 +13,13 @@ Every agent reads this first and updates it last.
 
 - Nothing.
 
+## SM-002 changes
+
+- `sim/config.ts` extended with full Stage 1 economy: energy burnout parameters, `housingTiers` (5 tiers), `jobs` (4 entries), `loans`, `businesses`, `skills`, `reputation`, `progression`, and `events` blocks.
+- Removed top-level `weeklyRentUsd` from `cities.kingston`; rent now lives in `housingTiers[n].weeklyRentUsd`.
+- `sim/index.ts` `step()` updated: `city.weeklyRentUsd` replaced with `CONFIG.cities.kingston.housingTiers[0].weeklyRentUsd` as a placeholder pending SM-006 (housing system).
+- `tests/sim/config.test.ts` added with 15 tests covering every acceptance criterion.
+
 ## Decision log
 
 | Date | Decision | Reason |
@@ -26,3 +33,4 @@ Every agent reads this first and updates it last.
 | 2026-11-09 | Event engine returns pendingEvents from step() rather than applying events inside step() | UI and balance suite must resolve event choices before state advances; embedding inside step() would require passing choice functions into the sim |
 | 2026-11-09 | Kingston wages denominated in USD at fixed 155 JMD/USD exchange rate for Stage 1 | Multi-currency is Stage 2 scope; fixed rate keeps Stage 1 sim pure |
 | 2026-11-09 | netWorthUsd() updated to include asset book values minus liability principals | Provides correct net worth calculation once assets and liabilities are populated by Stage 1 systems |
+| 2026-11-09 | Rent moved from city top-level to housingTiers array | GDD specifies 5 housing tiers; SM-006 will wire state.housingTier to the correct array index |
