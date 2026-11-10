@@ -9,6 +9,17 @@ Every agent reads this first and updates it last.
 - One passing smoke test.
 - SM-001: `Asset` and `Liability` interfaces added to `sim/types.ts`. `GameState` extended with 11 new fields: `skills`, `trust`, `assets`, `liabilities`, `firedEvents`, `housingTier`, `overdueWeeks`, `burnoutWeeks`, `wealthTier`, `activeJobId`, `underHoursWeeks`. `newGame()` initializes all to zero values. `netWorthUsd()` now sums cash + asset book values minus liability principals. Round-trip serialize test added for all new fields.
 
+## SM-009 changes
+
+- `content/events/stage1_family.json`: added 5 new events (`sibling_money_ask`, `family_funeral_contribution`, `aunt_pressure_home`, `uncle_tip_plot`, `grandmother_land_dispute`) to the existing `grandmother_shoebox` event. Total: 6 family events.
+- `content/events/stage1_financial_opportunity.json`: 8 new events covering a loan offer from Halima (`halima_loan_offer`), neighbour stock tip, laptop resale, Partner hand savings scheme, Western Union float hustle, shoe flip, neighbourhood paint contract, and a skills-gated bookkeeping offer (`skills_gated_bookkeeping`) gated on the `learned_market_finance` tag.
+- `content/events/stage1_financial_threat.json`: 7 new events — phone scam, market theft at Papine, medical bill from UHWI, bad debt from Desmond, failed food hustle, roof repair, and sibling hospital emergency.
+- `content/events/stage1_relationship.json`: 6 new events — meeting Halima (`meet_halima`), meeting the first partner at the Quad (`first_partner_meet`), Halima advice visit, partner salon deposit ask, community landlord-tenant dispute, and a direction conflict with the partner that includes the `cut_partner_first` tag option.
+- `content/events/stage1_world_clock.json`: 4 new events at weeks 1, 96, 208, 365 — gig economy shock, Papine Traders' Collective opening, Caribbean property price shift, JPS solar rollout.
+- `content/events/stage1_consequence.json`: 5 new events, all with `requiresTags` and `minYearsAfterTag` — debt collector (`took_shady_loan`, 2 years), ex-partner competitor (`cut_partner_first`, 3 years), insurance block (`evicted`, 1 year), sibling second ask (`ignored_sibling_ask`, 1 year), loan refinance (`took_loan`, 1 year).
+- `content/events/stage1_hustle_work.json`: 4 new events — DataProc data entry job offer, Halima's Thursday market tip (sets `learned_market_finance` tag for bookkeeping gate), DataProc workplace confrontation, PinkStar weekend delivery gig.
+- Total events: 40. All pass `npx tsx content/validate.ts`.
+
 ## In progress
 
 - Nothing.

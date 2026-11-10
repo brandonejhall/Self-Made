@@ -1,0 +1,144 @@
+[
+  {
+    "id": "phone_scam",
+    "stage": 1,
+    "channel": "text",
+    "title": "Western Union prize text",
+    "body": "A text from a Kingston number: you've won $500 in a Western Union promotion, verify your account with $30. The number is new and the grammar is off. This one is old. It still catches people.",
+    "trigger": { "cities": ["kingston"], "minWeek": 2, "weight": 50, "once": true },
+    "choices": [
+      {
+        "label": "Delete it. Classic scam.",
+        "effects": { "energy": 5, "reputation": 5, "addTags": ["avoided_phone_scam"] }
+      },
+      {
+        "label": "Risk the $30 — if it pays you're up $470.",
+        "effects": { "cashUsd": -30, "reputation": -5, "addTags": ["fell_for_phone_scam"] }
+      }
+    ]
+  },
+  {
+    "id": "market_theft",
+    "stage": 1,
+    "channel": "text",
+    "title": "Your bag got lifted at Papine Market",
+    "body": "You went to Papine to buy stock. Someone lifted $120 from your bag while you were at the vegetable stalls. Miss Vida at the next stall says she saw a youth in a blue shirt but he's long gone.",
+    "trigger": { "cities": ["kingston"], "minWeek": 4, "weight": 40, "once": true },
+    "choices": [
+      {
+        "label": "File a report with the constabulary.",
+        "effects": { "cashUsd": -120, "energy": -10, "reputation": 5, "addTags": ["reported_theft"] }
+      },
+      {
+        "label": "Let it go. Waste of time.",
+        "effects": { "cashUsd": -120, "energy": -5, "addTags": ["absorbed_theft"] }
+      }
+    ]
+  },
+  {
+    "id": "unexpected_medical_bill",
+    "stage": 1,
+    "channel": "document",
+    "title": "UHWI sends you a bill",
+    "body": "A letter from University Hospital. That chest infection you walked in with two weeks ago cost $280 to treat. No insurance. Payment is due in 30 days or the account goes to a collection agency.",
+    "trigger": { "cities": ["kingston"], "minWeek": 12, "weight": 45, "once": true },
+    "choices": [
+      {
+        "label": "Pay the full $280 now.",
+        "effects": { "cashUsd": -280, "reputation": 5, "addTags": ["paid_medical_bill"] }
+      },
+      {
+        "label": "Negotiate a payment plan.",
+        "effects": { "cashUsd": -100, "energy": -10, "addTags": ["on_payment_plan_medical"] }
+      },
+      {
+        "label": "Ignore it and hope.",
+        "effects": { "reputation": -10, "energy": 5, "addTags": ["ignored_medical_debt"] }
+      }
+    ]
+  },
+  {
+    "id": "bad_debt_helping",
+    "stage": 1,
+    "channel": "text",
+    "title": "Desmond isn't paying you back",
+    "body": "Three months ago you lent Desmond $150 to cover his stall licence. He's been avoiding your calls. You saw him at Constant Spring Market on Wednesday — he crossed the street when he spotted you. The money isn't coming back.",
+    "trigger": { "cities": ["kingston"], "minWeek": 24, "weight": 40, "once": true },
+    "choices": [
+      {
+        "label": "Write it off. That's on you for trusting.",
+        "effects": { "cashUsd": -150, "energy": -5, "addTags": ["wrote_off_bad_debt"] }
+      },
+      {
+        "label": "Go to him directly and make a scene.",
+        "effects": { "cashUsd": -100, "reputation": -5, "addTags": ["confronted_bad_debtor"] }
+      },
+      {
+        "label": "Get someone from the community to pressure him.",
+        "effects": { "cashUsd": -80, "reputation": -10, "addTags": ["used_pressure_bad_debt"] }
+      }
+    ]
+  },
+  {
+    "id": "failed_hustle_food",
+    "stage": 1,
+    "channel": "text",
+    "title": "The jerk chicken setup lost money",
+    "body": "You borrowed Miss Ida's pan and bought $80 in chicken and seasoning to sell at the community centre dance on Friday. The dance moved to Portmore at the last minute. You sold $30 of food before giving up. Down $50 and exhausted.",
+    "trigger": { "cities": ["kingston"], "minWeek": 8, "weight": 45, "once": true },
+    "choices": [
+      {
+        "label": "Take the loss. Try again next weekend.",
+        "effects": { "cashUsd": -50, "energy": -15, "addTags": ["failed_food_hustle"] }
+      },
+      {
+        "label": "Sell the rest door to door Sunday morning.",
+        "effects": { "cashUsd": -20, "energy": -25, "reputation": 5, "addTags": ["recovered_food_hustle"] }
+      }
+    ]
+  },
+  {
+    "id": "housing_repair",
+    "stage": 1,
+    "channel": "text",
+    "title": "Roof is leaking bad",
+    "body": "The zinc over your room has been going since October. This week's rain made it real. A proper fix costs $200. The tape-and-plastic option costs $40. If you ignore it your things get ruined and Miss Brown downstairs gets angry.",
+    "trigger": { "cities": ["kingston"], "minWeek": 16, "weight": 50, "once": true },
+    "choices": [
+      {
+        "label": "Proper fix. Pay the roofer $200.",
+        "effects": { "cashUsd": -200, "reputation": 5, "addTags": ["paid_proper_repair"] }
+      },
+      {
+        "label": "Patch it yourself for $40.",
+        "effects": { "cashUsd": -40, "energy": -20, "addTags": ["patched_roof_diy"] }
+      },
+      {
+        "label": "Move your things and ignore it.",
+        "effects": { "reputation": -5, "energy": -5, "addTags": ["ignored_roof_leak"] }
+      }
+    ]
+  },
+  {
+    "id": "family_emergency_cost",
+    "stage": 1,
+    "channel": "call",
+    "title": "Sibling is in hospital",
+    "body": "Aunt Marcia calls at 7 a.m. Your sister had an accident coming home from night school. She's at Spanish Town Hospital. She needs $180 for the X-ray and medication. The nurse is waiting. Your sister is crying in the background.",
+    "trigger": { "cities": ["kingston"], "minWeek": 30, "weight": 55, "once": true },
+    "choices": [
+      {
+        "label": "Send the $180 immediately.",
+        "effects": { "cashUsd": -180, "trust": { "sibling": 20 }, "reputation": 10, "addTags": ["paid_family_emergency"] }
+      },
+      {
+        "label": "Send $100 — it's all you can spare.",
+        "effects": { "cashUsd": -100, "trust": { "sibling": 5 }, "reputation": 5, "addTags": ["partial_family_emergency"] }
+      },
+      {
+        "label": "Tell them to call the other relatives first.",
+        "effects": { "trust": { "sibling": -15 }, "reputation": -10, "energy": 5, "addTags": ["refused_family_emergency"] }
+      }
+    ]
+  }
+]

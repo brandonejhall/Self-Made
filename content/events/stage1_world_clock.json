@@ -1,0 +1,90 @@
+[
+  {
+    "id": "era1_gig_shock",
+    "stage": 1,
+    "channel": "news",
+    "title": "Automation hits Kingston call centres",
+    "body": "OBSERVER: Three Kingston BPO firms announced automated call handling this week, eliminating 400 entry-level positions. Platforms offering delivery and domestic services report signup surges. The Jamaica Gleaner called it 'the gig economy acceleration.' The floor just moved.",
+    "trigger": { "cities": ["kingston"], "minWeek": 1, "weight": 1000, "once": true },
+    "choices": [
+      {
+        "label": "Register on the top gig apps now.",
+        "effects": { "cashUsd": 50, "energy": -10, "reputation": 5, "addTags": ["registered_gig_apps"] }
+      },
+      {
+        "label": "Watch and wait. See which platform wins.",
+        "effects": { "energy": 5, "addTags": ["watched_gig_shock"] }
+      },
+      {
+        "label": "Find work that bots can't do yet.",
+        "effects": { "reputation": 10, "energy": -10, "addTags": ["pivoted_local_work"] }
+      }
+    ]
+  },
+  {
+    "id": "kingston_informal_market_event",
+    "stage": 1,
+    "channel": "news",
+    "title": "Papine Traders' Collective opens new block",
+    "body": "GLEANER: The Papine Traders' Collective opened a covered market on Mona Road Saturday. 48 stalls, all informal economy operators. Stalls go for $30 a week. The chairman says they want people who are building something, not just selling.",
+    "trigger": { "cities": ["kingston"], "minWeek": 96, "weight": 100, "once": true },
+    "choices": [
+      {
+        "label": "Rent a stall and test your product there.",
+        "effects": { "cashUsd": -30, "energy": -10, "reputation": 10, "addTags": ["rented_papine_stall"] }
+      },
+      {
+        "label": "Partner with someone already there.",
+        "effects": { "reputation": 5, "trust": { "halima_yusuf": 5 }, "addTags": ["partnered_papine"] }
+      },
+      {
+        "label": "Note it and wait for the next round.",
+        "effects": { "energy": 5, "addTags": ["watched_papine_opening"] }
+      }
+    ]
+  },
+  {
+    "id": "mid_decade_market_shift",
+    "stage": 1,
+    "channel": "news",
+    "title": "Caribbean property up 18% in 18 months",
+    "body": "GLEANER/REUTERS: Regional consultancy Caribbuild reports Kingston median residential prices rose 18% in 18 months on diaspora demand and limited supply. Analysts say the window for first-time buyers under $50K is closing fast.",
+    "trigger": { "cities": ["kingston"], "minWeek": 208, "weight": 100, "once": true },
+    "choices": [
+      {
+        "label": "Start saving hard for a property deposit.",
+        "effects": { "energy": -10, "reputation": 5, "addTags": ["targeting_property"] }
+      },
+      {
+        "label": "Invest in a business instead — higher returns.",
+        "effects": { "reputation": 5, "cashUsd": -100, "addTags": ["chose_business_over_property"] }
+      },
+      {
+        "label": "Nothing changes. Keep building.",
+        "effects": { "energy": 5, "addTags": ["ignored_property_shift"] }
+      }
+    ]
+  },
+  {
+    "id": "energy_transition_construction",
+    "stage": 1,
+    "channel": "news",
+    "title": "JPS solar rollout opens 200 installation jobs",
+    "body": "GLEANER: Jamaica Public Service announced a $40M solar micro-grid programme across 12 parishes. Installation contractors are advertising immediately. No formal certification required for entry labour. Supervisors earn $18 an hour on the government rate card.",
+    "trigger": { "cities": ["kingston"], "minWeek": 365, "weight": 100, "once": true },
+    "choices": [
+      {
+        "label": "Apply to a solar installation crew.",
+        "effects": { "cashUsd": 200, "energy": -20, "reputation": 5, "addTags": ["joined_solar_crew"] }
+      },
+      {
+        "label": "Register as a subcontractor, recruit your own crew.",
+        "effects": { "cashUsd": -100, "reputation": 15, "energy": -15, "addTags": ["launched_solar_sub"] }
+      },
+      {
+        "label": "Watch how the first contracts play out.",
+        "effects": { "energy": 5, "addTags": ["watched_solar_rollout"] }
+      }
+    ]
+  }
+]

@@ -1,0 +1,108 @@
+[
+  {
+    "id": "shady_loan_collector",
+    "stage": 1,
+    "channel": "call",
+    "title": "Debt collector is at your door",
+    "body": "A man in a white shirt says he's from Maxfield Recovery Services. You owe the original principal plus two years of interest. He has a printed sheet. If you don't settle today he'll be back with paperwork and a witness. He looks like he means it.",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["took_shady_loan"], "minYearsAfterTag": 2, "weight": 200, "once": true },
+    "choices": [
+      {
+        "label": "Pay what's on the sheet.",
+        "effects": { "cashUsd": -400, "reputation": 5, "addTags": ["settled_shady_debt"] }
+      },
+      {
+        "label": "Refuse and shut the door.",
+        "effects": { "reputation": -20, "trust": { "halima_yusuf": -15 }, "addTags": ["refused_debt_collector"] }
+      },
+      {
+        "label": "Negotiate a payment plan.",
+        "effects": { "cashUsd": -150, "reputation": -5, "energy": -15, "addTags": ["negotiated_shady_debt"] }
+      }
+    ]
+  },
+  {
+    "id": "ex_partner_competitor",
+    "stage": 1,
+    "channel": "news",
+    "title": "Your ex is now your competition",
+    "body": "Word moves through the community: your ex started their own business. Same market, same neighbourhood. Miss Enid says they have six regular clients already. When you built together they had access to your whole operation.",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["cut_partner_first"], "minYearsAfterTag": 3, "weight": 150, "once": true },
+    "choices": [
+      {
+        "label": "Talk to them directly.",
+        "effects": { "trust": { "first_partner": 5 }, "energy": -10, "addTags": ["approached_ex_competitor"] }
+      },
+      {
+        "label": "Let them run. The market is big enough.",
+        "effects": { "reputation": 5, "addTags": ["ignored_ex_competitor"] }
+      },
+      {
+        "label": "Move to a different part of the market.",
+        "effects": { "cashUsd": -100, "energy": -10, "addTags": ["pivoted_away_from_ex"] }
+      }
+    ]
+  },
+  {
+    "id": "eviction_insurance_block",
+    "stage": 1,
+    "channel": "email",
+    "title": "InsureFirst declines your application",
+    "body": "Email from InsureFirst Commercial Insurance: 'Following a credit and tenancy history check, we are unable to offer business insurance at this time. A prior eviction on record is a disqualifying factor under our current underwriting rules.'",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["evicted"], "minYearsAfterTag": 1, "weight": 150, "once": true },
+    "choices": [
+      {
+        "label": "Find a smaller insurer who doesn't check history.",
+        "effects": { "cashUsd": -120, "energy": -10, "addTags": ["used_alternative_insurer"] }
+      },
+      {
+        "label": "Operate without insurance for now.",
+        "effects": { "reputation": -5, "energy": 5, "addTags": ["uninsured_operation"] }
+      },
+      {
+        "label": "Wait six months and reapply elsewhere.",
+        "effects": { "energy": -5, "addTags": ["deferred_insurance"] }
+      }
+    ]
+  },
+  {
+    "id": "sibling_second_ask",
+    "stage": 1,
+    "channel": "text",
+    "title": "Deja texts again — different tone",
+    "body": "It's been a year since you said no. She texts: 'I know you're busy. I'm not asking for me anymore. Just for the books I need. It's $35.' The 'just' is doing a lot of work in that sentence. So is the year of silence.",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["ignored_sibling_ask"], "minYearsAfterTag": 1, "weight": 100, "once": true },
+    "choices": [
+      {
+        "label": "Send the $35. No explanation needed.",
+        "effects": { "cashUsd": -35, "trust": { "sibling": 10 }, "addTags": ["paid_sibling_second"] }
+      },
+      {
+        "label": "Say no again.",
+        "effects": { "trust": { "sibling": -20 }, "reputation": -5, "addTags": ["ignored_sibling_twice"] }
+      },
+      {
+        "label": "Send $35 and call her.",
+        "effects": { "cashUsd": -35, "trust": { "sibling": 15 }, "energy": -5, "addTags": ["paid_sibling_second", "called_sibling"] }
+      }
+    ]
+  },
+  {
+    "id": "loan_refinance_offer",
+    "stage": 1,
+    "channel": "email",
+    "title": "NCB offers to refinance your loan",
+    "body": "Email from National Commercial Bank: they can consolidate your existing loan at a lower rate if your account is in good standing. The new terms cut your weekly payment by $12. The process takes two weeks and costs $50 in processing fees.",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["took_loan"], "minYearsAfterTag": 1, "weight": 80, "once": true },
+    "choices": [
+      {
+        "label": "Refinance with NCB. Lower weekly cost.",
+        "effects": { "cashUsd": -50, "reputation": 5, "trust": { "halima_yusuf": -5 }, "addTags": ["refinanced_loan"] }
+      },
+      {
+        "label": "Stay with the original terms.",
+        "effects": { "energy": 5, "addTags": ["kept_original_loan"] }
+      }
+    ]
+  }
+]

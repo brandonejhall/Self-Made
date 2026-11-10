@@ -1,0 +1,118 @@
+[
+  {
+    "id": "meet_halima",
+    "stage": 1,
+    "channel": "call",
+    "title": "Halima Yusuf introduces herself",
+    "body": "Halima Yusuf calls. She runs a community credit scheme out of a shop on Maxfield Avenue. She heard your name from Miss Enid. She keeps it short: she lends to people with no credit history if they come recommended. She wants to meet.",
+    "trigger": { "cities": ["kingston"], "minWeek": 6, "weight": 90, "once": true },
+    "choices": [
+      {
+        "label": "Go meet her at the shop.",
+        "effects": { "trust": { "halima_yusuf": 15 }, "energy": -5, "addTags": ["met_halima"] }
+      },
+      {
+        "label": "Thank her and say you'll call back.",
+        "effects": { "trust": { "halima_yusuf": 5 }, "energy": 5, "addTags": ["deferred_halima_meeting"] }
+      }
+    ]
+  },
+  {
+    "id": "first_partner_meet",
+    "stage": 1,
+    "channel": "text",
+    "title": "You meet someone at the Quad",
+    "body": "You went to the Quad to pick up stock and ended up talking for two hours. They're building something too — doing nails from home, trying to get a chair at a salon on Constant Spring Road. They text you that night: 'That was a good conversation.'",
+    "trigger": { "cities": ["kingston"], "minWeek": 12, "maxAge": 25, "weight": 70, "once": true },
+    "choices": [
+      {
+        "label": "Reply and keep it going.",
+        "effects": { "trust": { "first_partner": 15 }, "energy": -5, "addTags": ["met_first_partner"] }
+      },
+      {
+        "label": "Leave it. Too busy right now.",
+        "effects": { "trust": { "first_partner": -5 }, "energy": 5, "addTags": ["ignored_first_partner"] }
+      }
+    ]
+  },
+  {
+    "id": "halima_advice_visit",
+    "stage": 1,
+    "channel": "call",
+    "title": "Halima has something to say about your money",
+    "body": "Halima calls. She's seen enough people run out of road to know the warning signs. She says your spending pattern worries her and she wants to sit down. She's not owed this conversation — she's choosing to give it.",
+    "trigger": { "cities": ["kingston"], "minWeek": 30, "maxCashUsd": 1000, "requiresTags": ["met_halima"], "weight": 60, "once": true },
+    "choices": [
+      {
+        "label": "Go in and listen.",
+        "effects": { "trust": { "halima_yusuf": 10 }, "energy": -5, "reputation": 5, "addTags": ["took_halima_advice"] }
+      },
+      {
+        "label": "Thank her but handle it yourself.",
+        "effects": { "trust": { "halima_yusuf": -5 }, "energy": 5, "addTags": ["refused_halima_advice"] }
+      }
+    ]
+  },
+  {
+    "id": "partner_financial_ask",
+    "stage": 1,
+    "channel": "text",
+    "title": "Partner needs $80 for the salon deposit",
+    "body": "They text Thursday evening. They got a slot at the salon they've been targeting — Friday morning, $80 security deposit. Not asking you to give it. Just asking if you can lend it until Monday when their client pays.",
+    "trigger": { "cities": ["kingston"], "minWeek": 20, "requiresTags": ["met_first_partner"], "weight": 60, "once": true },
+    "choices": [
+      {
+        "label": "Lend them the $80.",
+        "effects": { "cashUsd": -80, "trust": { "first_partner": 15 }, "addTags": ["lent_first_partner"] }
+      },
+      {
+        "label": "Say no. You need it.",
+        "effects": { "trust": { "first_partner": -10 }, "energy": 5, "addTags": ["refused_first_partner_loan"] }
+      }
+    ]
+  },
+  {
+    "id": "community_dispute",
+    "stage": 1,
+    "channel": "call",
+    "title": "Landlord and tenant clash — you're in the middle",
+    "body": "Miss Brown says the man downstairs hasn't paid rent in 6 weeks. She wants you to have a word. The man downstairs — Marcus — is your locksmith and has done you two favours. If you stay out of it both of them will notice.",
+    "trigger": { "cities": ["kingston"], "minWeek": 24, "weight": 40, "once": true },
+    "choices": [
+      {
+        "label": "Side with Miss Brown. Talk to Marcus.",
+        "effects": { "reputation": 5, "energy": -10, "addTags": ["sided_with_landlord"] }
+      },
+      {
+        "label": "Side with Marcus. Stay quiet.",
+        "effects": { "reputation": -5, "energy": 5, "addTags": ["sided_with_tenant"] }
+      },
+      {
+        "label": "Stay completely out of it.",
+        "effects": { "energy": 5, "addTags": ["avoided_dispute"] }
+      }
+    ]
+  },
+  {
+    "id": "partner_direction_conflict",
+    "stage": 1,
+    "channel": "text",
+    "title": "They want to merge operations",
+    "body": "They text late Sunday. They want to combine your work — split income, share clients, present as one operation. It makes sense. It also means their debts become yours and their clients can walk from both of you, not just them.",
+    "trigger": { "cities": ["kingston"], "minWeek": 40, "requiresTags": ["met_first_partner"], "weight": 60, "once": true },
+    "choices": [
+      {
+        "label": "Merge. Build it together.",
+        "effects": { "trust": { "first_partner": 20 }, "energy": -10, "addTags": ["merged_with_partner"] }
+      },
+      {
+        "label": "Stay separate. Too much risk.",
+        "effects": { "trust": { "first_partner": -10 }, "energy": 5, "addTags": ["refused_partner_merge"] }
+      },
+      {
+        "label": "Cut them out now. Clean break.",
+        "effects": { "trust": { "first_partner": -20 }, "cashUsd": 50, "addTags": ["cut_partner_first"] }
+      }
+    ]
+  }
+]

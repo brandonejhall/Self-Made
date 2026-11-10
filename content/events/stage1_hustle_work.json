@@ -1,0 +1,86 @@
+[
+  {
+    "id": "job_offer_data_entry",
+    "stage": 1,
+    "channel": "email",
+    "title": "Data entry job at a Liguanea firm",
+    "body": "DataProc Solutions on Constant Spring Road. Five-day week, $280 a month. Entry-level data entry — clean office, 8 to 5. It's not what you planned but it covers rent with $80 left over. They want an answer by Friday.",
+    "trigger": { "cities": ["kingston"], "minWeek": 2, "weight": 70, "once": true },
+    "choices": [
+      {
+        "label": "Take the data entry job.",
+        "effects": { "cashUsd": 70, "energy": -30, "addTags": ["took_dataproc_job"] }
+      },
+      {
+        "label": "Decline. Hustle pays more if you're smart.",
+        "effects": { "energy": 10, "reputation": -5, "addTags": ["rejected_stable_job"] }
+      },
+      {
+        "label": "Negotiate a 3-day week instead.",
+        "effects": { "cashUsd": 45, "energy": -15, "addTags": ["took_dataproc_job"] }
+      }
+    ]
+  },
+  {
+    "id": "halima_hustle_tip",
+    "stage": 1,
+    "channel": "call",
+    "title": "Halima's tip about the Thursday market",
+    "body": "Halima calls. She says the Thursday night market at Sovereign Centre car park is underserved — people want phone accessories and screen repairs. 'The people with steady money are the ones who fix things,' she says.",
+    "trigger": { "cities": ["kingston"], "minWeek": 15, "requiresTags": ["met_halima"], "weight": 70, "once": true },
+    "choices": [
+      {
+        "label": "Go check the market this Thursday.",
+        "effects": { "cashUsd": 60, "energy": -15, "trust": { "halima_yusuf": 10 }, "addTags": ["took_halima_hustle_tip", "learned_market_finance"] }
+      },
+      {
+        "label": "Note it but stick to your current work.",
+        "effects": { "trust": { "halima_yusuf": 5 }, "energy": 5, "addTags": ["noted_halima_tip"] }
+      }
+    ]
+  },
+  {
+    "id": "workplace_confrontation",
+    "stage": 1,
+    "channel": "call",
+    "title": "Your supervisor cut your hours",
+    "body": "Courtney from DataProc calls. He's cutting you to 3 days a week starting next month because 'hours are being restructured.' You know it's because you pushed back on a process last Tuesday that wasn't your job. You can accept, escalate, or leave.",
+    "trigger": { "cities": ["kingston"], "minWeek": 10, "requiresTags": ["took_dataproc_job"], "weight": 60, "once": true },
+    "choices": [
+      {
+        "label": "Accept the cut and stay.",
+        "effects": { "cashUsd": -60, "energy": -10, "addTags": ["accepted_hour_cut"] }
+      },
+      {
+        "label": "Go over Courtney's head to management.",
+        "effects": { "energy": -20, "reputation": 5, "addTags": ["escalated_workplace"] }
+      },
+      {
+        "label": "Quit and go full-time on your own work.",
+        "effects": { "cashUsd": -70, "energy": 20, "addTags": ["quit_dataproc"] }
+      }
+    ]
+  },
+  {
+    "id": "gig_opportunity_delivery",
+    "stage": 1,
+    "channel": "text",
+    "title": "PinkStar Logistics needs riders this weekend",
+    "body": "PinkStar Logistics texts a blast to their list. Event delivery this weekend — Friday to Sunday, 3 PM to 10 PM. $15 an hour, cash same night. Need your own bike and ID. First come first served. Twelve spots.",
+    "trigger": { "cities": ["kingston"], "minWeek": 1, "weight": 60, "once": true },
+    "choices": [
+      {
+        "label": "Sign up for all three days.",
+        "effects": { "cashUsd": 315, "energy": -40, "addTags": ["took_pinkstar_gig"] }
+      },
+      {
+        "label": "Take Saturday only.",
+        "effects": { "cashUsd": 105, "energy": -15, "addTags": ["took_pinkstar_partial"] }
+      },
+      {
+        "label": "Skip it. Too much time away from your own work.",
+        "effects": { "energy": 5, "addTags": ["rejected_pinkstar_gig"] }
+      }
+    ]
+  }
+]

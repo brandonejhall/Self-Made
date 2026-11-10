@@ -1,0 +1,162 @@
+[
+  {
+    "id": "halima_loan_offer",
+    "stage": 1,
+    "channel": "call",
+    "title": "Halima will lend you money",
+    "body": "Halima Yusuf calls. She'll lend up to $500 at 15% a year — better than any bank will give you right now. She says she's heard good things and that her door is open once. She means it.",
+    "trigger": { "cities": ["kingston"], "minWeek": 8, "maxCashUsd": 1500, "weight": 80, "once": true },
+    "choices": [
+      {
+        "label": "Borrow $500 from Halima.",
+        "effects": { "cashUsd": 500, "trust": { "halima_yusuf": 10 }, "addTags": ["took_loan", "halima_first_loan"] }
+      },
+      {
+        "label": "Thank her and decline for now.",
+        "effects": { "trust": { "halima_yusuf": 5 }, "energy": 5, "addTags": ["refused_halima_loan"] }
+      }
+    ]
+  },
+  {
+    "id": "business_tip_neighbour",
+    "stage": 1,
+    "channel": "text",
+    "title": "Miss Paula knows someone moving stock cheap",
+    "body": "Miss Paula from two doors down says her nephew needs to clear phone cases and charging cables before he leaves for England. Everything goes at 60% of market. You'd need $200 to clear the lot. Could flip them on the market in a week.",
+    "trigger": { "cities": ["kingston"], "minWeek": 2, "maxCashUsd": 2000, "weight": 60, "once": true },
+    "choices": [
+      {
+        "label": "Buy the lot for $200.",
+        "effects": { "cashUsd": -200, "addTags": ["took_stock_flip"] }
+      },
+      {
+        "label": "Offer $120 instead.",
+        "effects": { "cashUsd": -120, "addTags": ["took_stock_flip_lowball"] }
+      },
+      {
+        "label": "Pass. Not your thing.",
+        "effects": { "energy": 5, "addTags": ["skipped_stock_flip"] }
+      }
+    ]
+  },
+  {
+    "id": "resale_market_find",
+    "stage": 1,
+    "channel": "text",
+    "title": "Laptop for sale — owner needs quick cash",
+    "body": "Someone in a WhatsApp group is selling a barely-used laptop for $180. They say it boots fine and they need rent money. Market price is closer to $350. No warranty, cash only, pickup in Half Way Tree today.",
+    "trigger": { "cities": ["kingston"], "minWeek": 3, "maxCashUsd": 2000, "weight": 55, "once": true },
+    "choices": [
+      {
+        "label": "Buy it for $180 and flip it.",
+        "effects": { "cashUsd": -180, "addTags": ["took_resale_laptop"] }
+      },
+      {
+        "label": "Offer $130 and see.",
+        "effects": { "cashUsd": -130, "addTags": ["took_resale_laptop_lowball"] }
+      },
+      {
+        "label": "Too risky — pass.",
+        "effects": { "energy": 5, "addTags": ["skipped_resale_laptop"] }
+      }
+    ]
+  },
+  {
+    "id": "partner_hand_invite",
+    "stage": 1,
+    "channel": "text",
+    "title": "Miss Enid is starting a Partner",
+    "body": "Miss Enid is organising a Partner hand — 10 people, $50 each week. You draw in 8 weeks. That's $500 in one shot. Miss Enid has run it for 20 years without missing a draw. The commitment is $50 a week until your draw comes.",
+    "trigger": { "cities": ["kingston"], "minWeek": 10, "maxCashUsd": 2500, "weight": 65, "once": true },
+    "choices": [
+      {
+        "label": "Join Miss Enid's Partner.",
+        "effects": { "cashUsd": -50, "reputation": 5, "addTags": ["joined_partner_hand"] }
+      },
+      {
+        "label": "Skip it this round.",
+        "effects": { "energy": 5, "addTags": ["skipped_partner_hand"] }
+      }
+    ]
+  },
+  {
+    "id": "mobile_money_hustle",
+    "stage": 1,
+    "channel": "text",
+    "title": "Western Union float hustle",
+    "body": "Your friend Clive says there's good money helping families collect remittances from Toronto and New York without waiting in the Western Union line. You run the errand, take 3%. First week you could clear $80.",
+    "trigger": { "cities": ["kingston"], "minWeek": 5, "weight": 50, "once": true },
+    "choices": [
+      {
+        "label": "Run the Western Union hustle.",
+        "effects": { "cashUsd": 80, "energy": -15, "reputation": 5, "addTags": ["took_remittance_hustle"] }
+      },
+      {
+        "label": "Not worth your time.",
+        "effects": { "energy": 5, "addTags": ["skipped_remittance_hustle"] }
+      }
+    ]
+  },
+  {
+    "id": "quick_flip_shoes",
+    "stage": 1,
+    "channel": "text",
+    "title": "Limited Jordans below cost",
+    "body": "A girl in your area needs cash today. She'll sell her boyfriend's boxfresh Jordans for $90. They'll go for $200 on Facebook Marketplace by the weekend. Cash in hand before noon.",
+    "trigger": { "cities": ["kingston"], "minWeek": 1, "maxCashUsd": 2000, "weight": 45, "once": true },
+    "choices": [
+      {
+        "label": "Buy the Jordans for $90.",
+        "effects": { "cashUsd": -90, "addTags": ["took_shoe_flip"] }
+      },
+      {
+        "label": "Offer $70 instead.",
+        "effects": { "cashUsd": -70, "reputation": -5, "addTags": ["took_shoe_flip_lowball"] }
+      },
+      {
+        "label": "Leave it alone.",
+        "effects": { "energy": 5, "addTags": ["skipped_shoe_flip"] }
+      }
+    ]
+  },
+  {
+    "id": "neighbourhood_paint_contract",
+    "stage": 1,
+    "channel": "text",
+    "title": "Miss Clarke needs her yard painted",
+    "body": "Miss Clarke up the road is repainting her fence and two exterior walls before her son's graduation. She'll pay $150 for the job. You'll need a weekend, two cans of paint from Budget Hardware, and someone to help.",
+    "trigger": { "cities": ["kingston"], "minWeek": 6, "weight": 55, "once": true },
+    "choices": [
+      {
+        "label": "Take the job for $150.",
+        "effects": { "cashUsd": 150, "energy": -20, "reputation": 10, "addTags": ["took_paint_contract"] }
+      },
+      {
+        "label": "Negotiate up to $200.",
+        "effects": { "cashUsd": 200, "energy": -20, "reputation": 5, "addTags": ["took_paint_contract"] }
+      },
+      {
+        "label": "Too much work for the pay.",
+        "effects": { "energy": 5, "addTags": ["skipped_paint_contract"] }
+      }
+    ]
+  },
+  {
+    "id": "skills_gated_bookkeeping",
+    "stage": 1,
+    "channel": "email",
+    "title": "Bookkeeping offer — Spanish Town Road",
+    "body": "Clive's uncle runs a wholesale business on Spanish Town Road. He needs weekly accounts. He'll pay $120 a week but wants to see you know what you're doing. If your numbers are good he'll recommend you to two other shops.",
+    "trigger": { "cities": ["kingston"], "requiresTags": ["learned_market_finance"], "weight": 60, "once": true },
+    "choices": [
+      {
+        "label": "Take the bookkeeping work.",
+        "effects": { "cashUsd": 120, "energy": -15, "reputation": 10, "addTags": ["took_bookkeeping_job"] }
+      },
+      {
+        "label": "Decline. Too much time commitment.",
+        "effects": { "energy": 5, "addTags": ["refused_bookkeeping"] }
+      }
+    ]
+  }
+]

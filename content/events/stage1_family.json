@@ -20,5 +20,115 @@
         "effects": { "energy": 5, "addTags": ["left_shoebox"] }
       }
     ]
+  },
+  {
+    "id": "sibling_money_ask",
+    "stage": 1,
+    "channel": "text",
+    "title": "Deja needs school money",
+    "body": "Your sister texts. She's short JMD 8,000 for her IT certification exam — about $50. The seat goes to someone else if she doesn't pay by Friday. You remember how hard you scraped that together yourself.",
+    "trigger": { "cities": ["kingston"], "minWeek": 4, "maxAge": 25, "weight": 60, "once": true },
+    "choices": [
+      {
+        "label": "Send her the $50.",
+        "effects": { "cashUsd": -50, "trust": { "sibling": 10 }, "addTags": ["paid_sibling"] }
+      },
+      {
+        "label": "Tell her to find it herself.",
+        "effects": { "trust": { "sibling": -15 }, "energy": 5, "addTags": ["ignored_sibling_ask"] }
+      },
+      {
+        "label": "Lend half. She pays back when she gets work.",
+        "effects": { "cashUsd": -25, "trust": { "sibling": 5 }, "addTags": ["lent_sibling"] }
+      }
+    ]
+  },
+  {
+    "id": "family_funeral_contribution",
+    "stage": 1,
+    "channel": "text",
+    "title": "Nine-night collection",
+    "body": "Your aunt is organising the nine-night for Grandma. She's calling everyone for a contribution. $40 covers your share of the food and the sound system rental. The rest of the neighbourhood will notice who shows and who doesn't.",
+    "trigger": { "cities": ["kingston"], "minWeek": 100, "maxAge": 24, "weight": 50, "once": true },
+    "choices": [
+      {
+        "label": "Contribute $40 and go.",
+        "effects": { "cashUsd": -40, "reputation": 5, "addTags": ["paid_nine_night"] }
+      },
+      {
+        "label": "Send the money, stay home.",
+        "effects": { "cashUsd": -40, "reputation": 2, "addTags": ["paid_nine_night"] }
+      },
+      {
+        "label": "Skip it this time.",
+        "effects": { "reputation": -5, "trust": { "sibling": -5 }, "addTags": ["skipped_nine_night"] }
+      }
+    ]
+  },
+  {
+    "id": "aunt_pressure_home",
+    "stage": 1,
+    "channel": "call",
+    "title": "Aunt wants you back on Spanish Town Road",
+    "body": "Aunt Marcia calls. The house feels empty since Grandma passed. She needs help with bills. Move back and your costs drop, but you lose the workspace you've been using. She's not really asking.",
+    "trigger": { "cities": ["kingston"], "minWeek": 104, "maxAge": 24, "weight": 40, "once": true },
+    "choices": [
+      {
+        "label": "Move back. Save cash, lose the workspace.",
+        "effects": { "cashUsd": 60, "energy": -10, "reputation": 5, "addTags": ["moved_back_family"] }
+      },
+      {
+        "label": "Stay put. Send her $20 a week instead.",
+        "effects": { "cashUsd": -20, "trust": { "sibling": 5 }, "addTags": ["refused_family_home"] }
+      },
+      {
+        "label": "Tell her you'll think about it.",
+        "effects": { "energy": -5, "addTags": ["deferred_family_home"] }
+      }
+    ]
+  },
+  {
+    "id": "uncle_tip_plot",
+    "stage": 1,
+    "channel": "text",
+    "title": "Uncle says there's a plot going cheap in Portmore",
+    "body": "Uncle Devon texts. A man is selling a small plot in Portmore — $1,800 cash, needs to move quick. No title, just a letter of agreement. Devon says it's a good deal. You know Devon has expensive taste in bad advice.",
+    "trigger": { "cities": ["kingston"], "minWeek": 20, "maxAge": 26, "weight": 30, "once": true },
+    "choices": [
+      {
+        "label": "Buy the plot for $1,800.",
+        "effects": { "cashUsd": -1800, "addTags": ["bought_portmore_plot"], "setFlags": ["owns_portmore_plot"] }
+      },
+      {
+        "label": "Pass. No title, too risky.",
+        "effects": { "energy": 5, "addTags": ["rejected_portmore_plot"] }
+      },
+      {
+        "label": "Ask Devon to get the title first.",
+        "effects": { "energy": -5, "addTags": ["deferred_portmore_deal"] }
+      }
+    ]
+  },
+  {
+    "id": "grandmother_land_dispute",
+    "stage": 1,
+    "channel": "call",
+    "title": "Cousin is claiming Grandma's room",
+    "body": "Cousin Leroy says the back room is his now — Grandma told him. Aunt Marcia is staying out of it. No will was left. Leroy is already moving things in. Either way, the family is watching.",
+    "trigger": { "cities": ["kingston"], "minWeek": 108, "maxAge": 24, "requiresTags": ["has_shoebox"], "weight": 50, "once": true },
+    "choices": [
+      {
+        "label": "Fight Leroy. Get a lawyer.",
+        "effects": { "cashUsd": -200, "reputation": 5, "trust": { "sibling": 5 }, "addTags": ["fought_land_dispute"] }
+      },
+      {
+        "label": "Let Leroy have it. Keep the peace.",
+        "effects": { "reputation": -5, "trust": { "sibling": -5 }, "energy": 5, "addTags": ["conceded_land_dispute"] }
+      },
+      {
+        "label": "Bring the whole family to mediate.",
+        "effects": { "energy": -10, "reputation": 10, "addTags": ["mediated_land_dispute"] }
+      }
+    ]
   }
 ]
