@@ -6,11 +6,15 @@ The pm agent owns this file. Other agents add items only under "Requested".
 
 | Sprint | Tickets | Run mode |
 |---|---|---|
-| A | SM-015 | Alone. Must merge before Sprint B starts. |
-| B | SM-016, SM-017, SM-018, SM-019, SM-022 | Parallel worktrees |
-| C | SM-020, then SM-021, then `/autotune` | Sequential |
+| A | SM-015 | Done |
+| B | SM-016, SM-017, SM-018, SM-019 | Done. SM-022 cancelled |
+| C | SM-020, SM-023, SM-024, SM-025, TUNE-1 | Done |
+| C2 | SM-021, SM-026 | Done (f6346c7) |
+| D1 | SM-027, then SM-029, then SM-033 | Sequential. All three edit `sim/systems/loans.ts` and `sim/types.ts` |
+| D2 | SM-030, SM-031, SM-034, SM-035, SM-036 | Parallel with D1. SM-030 and SM-031 both touch `CONFIG.cities.kingston.jobs`: run SM-030 first |
+| D3 | SM-028 after SM-027; SM-032 after SM-031; `/autotune` after SM-031, SM-033 and SM-034 | Follow-ups |
 
-Spec references: GDD sections 8.4 (business growth), 9.1 (property), 11 (shady tags, delayed consequences), 12 (balance targets), 15.1 (summary), 17 (exit criteria).
+Spec references: GDD sections 7.2 (expenses, expense shock), 7.4 (loans), 8.1 (jobs), 8.4 (business growth), 9.1 (property), 11 (shady tags, delayed consequences), 12 (balance targets), 15.1 (summary), 17 (exit criteria).
 
 ## Ticket format
 
@@ -30,125 +34,150 @@ Spec references: GDD sections 8.4 (business growth), 9.1 (property), 11 (shady t
 
 ## Ready
 
-### SM-015: Split sim/index.ts into system modules
+### SM-027: Store APR on every loan liability
 - Owner: sim-engineer
-- Goal: Move each Stage 1 system out of `sim/index.ts` into `sim/systems/<system>.ts`, with `step()` as a fixed-order pipeline and zero behavior change.
-- Files: `sim/index.ts`, `sim/systems/energy.ts`, `sim/systems/skills.ts`, `sim/systems/jobs.ts`, `sim/systems/loans.ts`, `sim/systems/housing.ts`, `sim/systems/business.ts`, `sim/systems/tiers.ts`, `sim/systems/events.ts`, plus one module per other system found in `step()` (for example `sim/systems/income.ts`), `tests/sim/golden.test.ts`
+- Goal: Every loan `Liability` carries its APR so the UI and the amortization in SM-033 read it from state.
+- Files: `sim/systems/loans.ts`, `sim/systems/housing.ts` (eviction repay), `sim/index.ts` (deserialize), `sim/types.ts`, `tests/sim/loans.test.ts`, `tests/sim/golden.test.ts`
 - Depends on: none
-- Size: M
+- Size: S
 - Acceptance:
-  - [ ] `tests/sim/golden.test.ts` is written and committed BEFORE any code moves. It runs seed 42, `holdJob("full_time")` at week 0, input `{ work: 40, hustle: 10, rest: 50, study: 0, sideProject: 0, skill: "" }` every week, all `content/events/*.json` loaded via `loadEvents`, every pending event resolved with choice 0 via `applyEvent`, for 468 steps.
-  - [ ] The golden test asserts the exact final `week`, `cashUsd`, `energy`, `reputation`, `rngState`, `history.length`, `firedEvents.length`, and the full `serialize(state)` string (or an FNV-1a 32-bit hash of it computed in the test), all recorded from the pre-refactor code.
-  - [ ] The golden test passes unchanged after the refactor.
-  - [ ] Every module in `sim/systems/` exports pure functions only. No module imports from `/ui`, touches `window`, `localStorage`, `Date.now()` or `Math.random()`.
-  - [ ] `step()` in `sim/index.ts` calls the system modules in one fixed order, written as a single ordered list in the function body, with a comment listing the order.
-  - [ ] Every symbol `sim/index.ts` exported before the refactor is still exported from `sim/index.ts` with the same signature (`newGame`, `validateInput`, `step`, `takeLoan`, `moveHousing`, `launchBusiness`, `holdJob`, `quitJob`, `loadEvents`, `selectEvents`, `applyEvent`, `effectiveLoanApr`, `effectiveHustleCeiling`, `netWorthUsd`, `serialize`, `deserialize`, `CONFIG` and all re-exported types).
-  - [ ] All existing tests in `tests/sim/` pass without edits.
-  - [ ] `npm test` and `tsc --noEmit` are green.
-  - [ ] STATE.md records the pipeline order. Later tickets that intentionally change behavior must re-record golden values and state so in STATE.md.
-
-### SM-016: Rental property system
-- Owner: sim-engineer
-- Goal: Let the player buy, rent out and sell Kingston rental properties with a mortgage, per GDD section 9.1.
-- Files: `sim/systems/property.ts`, `sim/index.ts`, `sim/config.ts`, `sim/types.ts`, `tests/sim/property.test.ts`, `tests/sim/golden.test.ts`
-- Depends on: SM-015
-- Size: M
-- Acceptance:
-  - [ ] `CONFIG.property` contains every key in GDD section 14 prefixed `property.` with the GDD values, and `property.types` holds `kgn_studio` ($30,000, $60/week), `kgn_two_bed` ($65,000, $120/week), `kgn_house` ($150,000, $260/week).
-  - [ ] `buyProperty(state, propertyTypeId, downPaymentUsd, termWeeks)` returns `[GameState, string | null]` and is exported from `sim/index.ts`.
-  - [ ] `buyProperty` returns an error and the unchanged state when: `wealthTier < 1`; unknown type id; `downPaymentUsd < 0.20 × price`; `downPaymentUsd > price`; `termWeeks` not in [520, 1040] while a mortgage is needed; `cashUsd < downPaymentUsd + 0.03 × price`; 3 properties already owned.
-  - [ ] On success for `kgn_studio` with $6,000 down and 1040 weeks: cash drops by $6,900; one `Asset` with `kind: "property"`, `bookValueUsd: 30000`, occupied; one `Liability` with `kind: "mortgage"`, `principalUsd: 24000`, `propertyId` equal to the asset id, weekly payment from the GDD 7.4 formula at 9% APR; history tag `bought_kgn_studio`.
-  - [ ] A $30,000 down payment on `kgn_studio` creates no liability.
-  - [ ] Each `step()`: an occupied property adds its weekly rent to cash; every property charges `bookValueUsd × 0.01 / 52`; each mortgage charges its weekly payment and reduces principal by payment minus `principal × 0.09 / 52`.
-  - [ ] With the vacancy draw forced below 0.015 (test via a crafted `rngState`), the property is vacant for exactly 6 steps, pays no rent during them, and is occupied again on step 7.
-  - [ ] After 52 steps from purchase, `bookValueUsd` equals `round2(price × 1.04)`. After 104 steps, `round2(round2(price × 1.04) × 1.04)`.
-  - [ ] `sellProperty(state, assetId)` adds `bookValueUsd × 0.95 − remaining principal` to cash, removes the asset and its mortgage, adds tag `sold_property`. Unknown asset id returns an error.
-  - [ ] `netWorthUsd()` includes property book value and subtracts mortgage principal.
-  - [ ] Each mortgage payment is charged exactly once per step. A test with 1 mortgage and no other liability asserts cash change = rent − maintenance − payment − rent for housing tier − living costs.
-  - [ ] Property rent is not counted through the business `weeklyIncomeUsd` sum. A test with 1 occupied property and 0 businesses asserts rent is added once.
-  - [ ] Mortgages do not count toward `loans.maxSimultaneous`. A tier 1 player with 1 mortgage can still take 2 loans.
-  - [ ] `serialize`/`deserialize` round-trips a state holding 1 vacant and 1 occupied property with mortgages.
+  - [ ] `Liability.kind` and `Liability.aprPct` are required fields in `sim/types.ts`.
+  - [ ] `takeLoan` sets `kind: "loan"` and `aprPct` equal to `effectiveLoanApr(state)` at the time of the loan. A player with negotiation 8 gets `aprPct: 16`. A player with negotiation 100 gets `aprPct: 4`.
+  - [ ] Raising negotiation after a loan is taken does not change that loan's `aprPct`.
+  - [ ] The eviction repayment liability has `kind: "loan"` and `aprPct: 0`.
+  - [ ] `buyProperty` mortgages have `kind: "mortgage"` and `aprPct: 9` (`CONFIG.property.mortgageAprPct`).
+  - [ ] `deserialize` of a save whose liabilities lack `kind` or `aprPct` fills: `kind: "mortgage"` when `propertyId` is set, else `kind: "loan"`; mortgage `aprPct` = `CONFIG.property.mortgageAprPct`; ids starting `eviction_repay_` get 0; other loans get `CONFIG.loans.baseAprPct`.
+  - [ ] Weekly payments for new loans are unchanged from the current formula.
   - [ ] Golden test values re-recorded only if the golden run changes; STATE.md notes the reason.
 
-### SM-017: Business growth stages
-- Owner: sim-engineer
-- Goal: Businesses grow through 4 stages via reinvestment and time, and can fail, per GDD section 8.4.
-- Files: `sim/systems/business.ts`, `sim/index.ts`, `sim/config.ts`, `sim/types.ts`, `tests/sim/business.test.ts`, `tests/sim/golden.test.ts`
-- Depends on: SM-015
-- Size: M
+### SM-028: UI reads loan APR from state
+- Owner: ui-engineer
+- Goal: The Bank app shows each loan's APR from `Liability.aprPct` and stops storing APR in `localStorage`.
+- Files: `ui/main.ts`
+- Depends on: SM-027
+- Size: S
 - Acceptance:
-  - [ ] `CONFIG.businesses.stages` holds 4 entries: incomeMult 1, 2, 4, 8; minWeeksToEnter 0, 26, 52, 78; reinvestToEnterUsd 0, 5000, 20000, 60000; weeklyFailureChance 0.003, 0.0015, 0.001, 0.0005. `burnoutFailureMult = 2`, `failureReputationPenalty = 5`.
-  - [ ] `launchBusiness` creates an asset with `kind: "business"`, `stage: 1`, `weeksAtStage: 0`, `reinvestedAtStageUsd: 0`. Existing `tests/sim/wealth.test.ts` passes unchanged.
-  - [ ] `reinvestBusiness(state, assetId, amountUsd)` returns `[GameState, string | null]`, is exported from `sim/index.ts`, and on success deducts cash and adds `amountUsd` to both `reinvestedAtStageUsd` and `bookValueUsd`.
-  - [ ] `reinvestBusiness` returns an error for: unknown asset id; non-business asset; `amountUsd <= 0`; `cashUsd < amountUsd`; stage 4 business.
-  - [ ] A food stall with $5,000 reinvested advances to stage 2 on the step where `weeksAtStage` reaches 26, and not before. Its `weeklyIncomeUsd` becomes $360. History tag `grew_food_stall_stage2`.
-  - [ ] A food stall at 26 weeks with $4,999.99 reinvested stays at stage 1.
-  - [ ] A business advances at most 1 stage per step.
-  - [ ] With the failure draw forced below 0.003 (crafted `rngState`), a stage 1 business is removed, tag `lost_business_<type>` is added and reputation drops by 5, clamped at 0.
-  - [ ] With energy < 20, a draw of 0.005 fails a stage 1 business (doubled chance 0.006); with energy ≥ 20 the same draw does not.
-  - [ ] `serialize`/`deserialize` round-trips a stage 3 business with partial reinvestment.
+  - [ ] No `localStorage` key holds loan APR. On load the UI deletes any legacy APR key it wrote before.
+  - [ ] The Bank app shows `aprPct` for every active loan, read from `state.liabilities`.
+  - [ ] A save made before SM-027 loads and shows the APR filled by `deserialize`.
+  - [ ] `npm run build` is clean.
+
+### SM-029: Unique liability ids
+- Owner: sim-engineer
+- Goal: Two loans of the same amount in the same week get distinct ids.
+- Files: `sim/systems/loans.ts`, `sim/systems/housing.ts`, `sim/systems/property.ts`, `sim/index.ts`, `sim/types.ts`, `tests/sim/loans.test.ts`, `tests/sim/golden.test.ts`
+- Depends on: SM-027
+- Size: S
+- Acceptance:
+  - [ ] `GameState.nextLiabilitySeq: number` exists, 0 in `newGame`.
+  - [ ] `takeLoan` assigns id `loan_<nextLiabilitySeq>` and increments the counter by 1. Mortgages use `mortgage_<n>` and eviction repayments use `eviction_repay_<n>` from the same counter.
+  - [ ] A tier 1 player who takes two $1,000 loans in week 10 holds 2 liabilities with different ids.
+  - [ ] `deserialize` of a save without `nextLiabilitySeq` sets it to the save's `liabilities.length`. Old ids keep their old strings.
+  - [ ] Ids are deterministic: the same seed and inputs produce the same ids.
   - [ ] Golden test values re-recorded only if the golden run changes; STATE.md notes the reason.
 
-### SM-018: Shortcut events and delayed follow-ups
-- Owner: lore-writer
-- Goal: Give every run shady or shortcut choices that pay more now and come back 1 to 4 years later.
-- Files: `content/events/stage1_shortcut.json`, `content/events/stage1_shortcut_consequence.json`, `content/tags.json`, `content/schema/tags.schema.json`
+### SM-030: Move the full-time hustle cap to config
+- Owner: sim-engineer
+- Goal: Remove the literal 20 from `sim/systems/input.ts` and drive the cap from each job's config entry.
+- Files: `sim/config.ts`, `sim/systems/input.ts`, `tests/sim/jobs.test.ts`, `tests/sim/config.test.ts`
 - Depends on: none
-- Size: M
+- Size: S
 - Acceptance:
-  - [ ] `content/tags.json` contains a `shadyTags` array with at least: `took_shady_loan`, `took_loan_shark`, `cash_deal_shady`, `cut_out_partner`, `cut_partner_first`, `skipped_permit`, `undeclared_income`. It validates against `content/schema/tags.schema.json`.
-  - [ ] `stage1_shortcut.json` holds 8 to 10 events. Topics covered at least once each: cash deal, cutting out a partner, skipping a permit, loan-shark money.
-  - [ ] Every shortcut event has exactly 1 or 2 shady choices (choice `addTags` contains a shady tag) and at least 1 non-shady choice.
-  - [ ] In every shortcut event, each shady choice has a strictly higher `cashUsd` effect than every non-shady choice in that event.
-  - [ ] Every shortcut event has `cities` including `kingston`, `minWeek` between 26 and 208 inclusive, `weight >= 15`, and `once: true`.
-  - [ ] `stage1_shortcut_consequence.json` holds at least 3 events. Each has `requiresTags` with one shady tag used in `stage1_shortcut.json`, `minYearsAfterTag` between 1 and 4 inclusive, `weight >= 30`, and `once: true`.
-  - [ ] Every consequence event has at least 1 choice with `cashUsd <= -500` or `reputation <= -10`.
-  - [ ] All event text follows `docs/LORE.md`. No event contradicts a LORE.md character, place or date.
-  - [ ] `npm run validate` passes. Total event count is 51 to 53.
+  - [ ] Each entry in `CONFIG.cities.kingston.jobs` has `maxHustleHours: number | null`. Values: gig `null`, part_time `null`, full_time `20`, skilled `20`.
+  - [ ] `sim/systems/input.ts` contains no numeric literal for the cap and no `minCommitHours >= 40` check.
+  - [ ] With full_time or skilled held, hustle 21 is rejected and hustle 20 is accepted. The error string reads `Job limits hustle to <maxHustleHours> hours per week`.
+  - [ ] With gig, part_time or no job, hustle 60 is accepted.
+  - [ ] The golden test passes unchanged.
 
-### SM-019: Balance strategies resolve event choices
+### SM-031: Job skill requirements
+- Owner: sim-engineer
+- Goal: The skilled job requires financial skill 3 per GDD section 8.1, so it is not open at week 0.
+- Files: `sim/config.ts`, `sim/systems/jobs.ts`, `tests/sim/jobs.test.ts`
+- Depends on: SM-030
+- Size: S
+- Acceptance:
+  - [ ] Each job entry has `requiresSkills: Record<string, number>`. Values: gig, part_time, full_time `{}`; skilled `{ financial: 3 }`.
+  - [ ] `holdJob(newGame(1, "kingston"), "skilled")` returns the unchanged state and the error `Skilled job requires financial skill 3`.
+  - [ ] `holdJob` with `skills.financial = 3` on "skilled" succeeds and sets `activeJobId = "skilled"`.
+  - [ ] `holdJob` on gig, part_time and full_time succeeds at week 0.
+  - [ ] Dropping below the requirement after taking the job does not remove the job. Skills never decrease in Stage 1.
+  - [ ] Existing job tests that hold "skilled" at week 0 are updated to set financial 3 first.
+  - [ ] The golden test passes unchanged (it holds full_time).
+
+### SM-032: Competent strategy respects the skilled job gate
 - Owner: balance-qa
-- Goal: Make each balance strategy resolve pending events by its own rule and report the CONCEPT balance metrics over 300 seeds.
-- Files: `tests/balance/run.ts`, `tests/balance/strategies.ts`, `tests/balance/strategies.test.ts`, `tests/balance/report.md`
-- Depends on: none (uses `step`, `applyEvent`, `loadEvents`, `netWorthUsd` as they exist; reads `content/tags.json` if present, else falls back to the GDD section 11 list)
-- Size: M
+- Goal: The competent strategy earns financial 3 before it takes the skilled job, and the report shows the effect.
+- Files: `tests/balance/strategies.ts`, `tests/balance/strategies.test.ts`, `tests/balance/report.md`, `tests/balance/recommendations.md`
+- Depends on: SM-031
+- Size: S
 - Acceptance:
-  - [ ] Each strategy resolves every pending event every week via `applyEvent` before the next `step()`.
-  - [ ] Greedy picks the choice with the highest `effects.cashUsd` (missing = 0), shady choices included. Ties go to the lowest index.
-  - [ ] Competent excludes shady choices (any `addTags` entry in `shadyTags`), then picks the highest score `cashUsd + 100 × reputation + 50 × sum(trust deltas)`. Ties go to the lowest index. If every choice is shady, it picks the highest score anyway.
-  - [ ] Passive excludes shady choices, then picks the smallest `|cashUsd|`. Ties go to the lowest index.
-  - [ ] Unit tests cover each picker on a fixture event with 3 choices (1 shady high-cash, 1 safe mid-cash, 1 safe zero-cash) and assert indices: greedy = shady, competent = safe mid-cash, passive = zero-cash.
-  - [ ] The runner uses seeds 0 to 299 for each strategy.
-  - [ ] `report.md` adds per strategy: median age at first $1M (1 decimal, or "not reached" per GDD section 12) and the share of runs reaching $1M by week 468.
-  - [ ] `report.md` adds the greedy delayed-consequence fire rate: runs with ≥ 1 fired event whose trigger sets `minYearsAfterTag`, over 300.
-  - [ ] `report.md` adds a table of every delayed consequence event id fired across all 900 runs: fire count and median delay in weeks from first matching tag to fire.
-  - [ ] `report.md` adds a pass/fail line per GDD section 12 target.
-  - [ ] If a sim API for choice resolution is missing, the ticket adds a request under "Requested" in BACKLOG.md and uses what exists.
+  - [ ] Competent holds full_time from week 0 and calls `holdJob("skilled")` on the first week `skills.financial >= 3`.
+  - [ ] No strategy ignores a `holdJob` error. A strategy test asserts every `holdJob` call it makes returns `null` error.
+  - [ ] `report.md` is regenerated. If T1 to T4 fail, `recommendations.md` lists config changes verified with what-if mode.
 
-### SM-020: End the run at week 468 with a summary
+### SM-033: Loan principal amortizes
 - Owner: sim-engineer
-- Goal: The run stops at age 30 and the state carries the data the summary screen needs, per GDD section 15.1.
-- Files: `sim/systems/tiers.ts` or `sim/systems/endOfRun.ts`, `sim/systems/events.ts`, `sim/index.ts`, `sim/config.ts`, `sim/types.ts`, `tests/sim/endOfRun.test.ts`, `tests/sim/golden.test.ts`
-- Depends on: SM-016, SM-017
-- Size: M
+- Goal: Loan `principalUsd` shrinks each week so net worth stops overstating debt.
+- Files: `sim/systems/loans.ts`, `tests/sim/loans.test.ts`, `tests/sim/golden.test.ts`
+- Depends on: SM-027
+- Size: S
 - Acceptance:
-  - [ ] `CONFIG.progression.stage1EndWeek = 468` and `CONFIG.progression.summaryTopChoices = 5`.
-  - [ ] `GameState` gains `stage1Complete: boolean` (false in `newGame`), `summary: Stage1Summary | null` (null in `newGame`), `choiceLog: { week, eventId, choiceIndex, netWorthDeltaUsd }[]` (empty in `newGame`), `maxWealthTier: number` (0 in `newGame`).
-  - [ ] `applyEvent` appends one `choiceLog` entry with `netWorthDeltaUsd = netWorthUsd(after) − netWorthUsd(before)`.
-  - [ ] After 467 steps `stage1Complete` is false. After step 468 it is true and `summary` is set.
-  - [ ] `summary.finalNetWorthUsd` equals `netWorthUsd(state)` at week 468.
-  - [ ] `summary.wealthTierReached` equals the highest `wealthTier` held at any step, including a run that reaches tier 2 and drops back.
-  - [ ] `summary.topChoices` holds the 5 `choiceLog` entries with the largest `|netWorthDeltaUsd|`, sorted descending, ties by earlier week. With 3 entries it holds 3.
-  - [ ] `summary.consequencesFired` lists, in firing order, every fired event id whose trigger sets `minYearsAfterTag`, using the events passed to `step()`.
-  - [ ] `step()` on a state with `stage1Complete = true` throws `"Stage 1 is complete"`.
-  - [ ] Reaching $1M before week 468 sets `stage2_unlocked` and does not end the run.
-  - [ ] `serialize`/`deserialize` round-trips a completed state with a summary.
+  - [ ] Each step, every `kind: "loan"` liability reduces `principalUsd` by `weeklyPaymentUsd − round2(principalUsd × aprPct / 100 / 52)`, rounded to cents. Mortgages keep their SM-016 rule.
+  - [ ] A $1,000 loan at 18% over 26 weeks has `principalUsd` below $1,000 after 1 step and is removed after step 26.
+  - [ ] On the final payment week the payment equals remaining principal plus that week's interest, so total paid never leaves a residual over $0.01 and principal never goes negative.
+  - [ ] An `aprPct: 0` eviction repayment drops by exactly $20 per step.
+  - [ ] `netWorthUsd` falls by less than the weekly payment on a week with no other changes.
+  - [ ] Golden test values re-recorded only if the golden run changes; STATE.md notes the reason.
+
+### SM-034: Weekly expense shock
+- Owner: sim-engineer
+- Goal: Add the GDD section 7.2.1 expense shock so wage-only runs vary across seeds.
+- Files: `sim/config.ts`, `sim/systems/expenseShock.ts`, `sim/index.ts`, `tests/sim/expenseShock.test.ts`, `tests/sim/golden.test.ts`
+- Depends on: none
+- Size: S
+- Acceptance:
+  - [ ] `CONFIG.expenses` holds `shockChancePerWeek: 0.02`, `shockMinUsd: 100`, `shockMaxUsd: 600`.
+  - [ ] The shock system runs in the pipeline after `housingCost` and before `loanRepayment`. STATE.md records the new order.
+  - [ ] Every step draws exactly 1 `nextRandom` for the chance. When the draw is below 0.02 it draws 1 more for the amount: `round2(100 + u × 500)`.
+  - [ ] With a crafted `rngState` that forces a hit, cash drops by the shock amount and history gets `{ action: "unplanned_expense_<amount>", tags: ["unplanned_expense"] }`.
+  - [ ] With a forced miss, cash and history match a run without the system.
+  - [ ] Golden test re-recorded. STATE.md logs the reason: the new per-week draw shifts every RNG stream.
+  - [ ] Over seeds 0 to 299 with the passive strategy, W468 net worth p10 and p90 differ by at least $1,000 (checked by balance-qa in the next report).
+
+### SM-035: Report delay per delayed consequence
+- Owner: balance-qa
+- Goal: Restore the delay column so GDD 17.1 item 4 is verifiable.
+- Files: `tests/balance/run.ts`, `tests/balance/report.md`
+- Depends on: none
+- Size: S
+- Acceptance:
+  - [ ] The delayed consequence table adds, per event id, the median, min and max delay in weeks from the week its `requiresTags` tag first appeared to the week it fired, across all 1,200 runs.
+  - [ ] The report adds a line: count of distinct delayed consequence ids with at least 1 fire whose delay is 52 to 260 weeks, and PASS when the count is at least 3.
+
+### SM-036: Late-slice depth design (ages 25 to 30)
+- Owner: pm
+- Goal: Spec Stage 1 decisions for players who have hit business stage 4 and the 3-property cap, so ages 25 to 30 are not a dead state.
+- Files: `docs/GDD.md`, `docs/BACKLOG.md`, `docs/STATE.md`
+- Depends on: none
+- Size: M
+- Evidence: SM-025 report. Competent reaches business stage 4 at median age 24.8. Greedy at 25.0. Both hold 3 properties by W156 (age 24).
+- Acceptance:
+  - [ ] GDD gets a section 8.5 with at least 2 new late-slice decisions. Each one states its unlock condition, cost, payoff, risk and config keys in numbers.
+  - [ ] Each decision serves a named pillar from CONCEPT.md and stays inside Stage 1 scope (one person, no employees, no corporate entities, Kingston only).
+  - [ ] Each decision names a LORE.md source or is flagged for lore-writer before any content ticket.
+  - [ ] GDD section 12 adds a guide rail: competent and greedy median age at last growth decision (reinvest, buy, launch or a new section 8.5 action) ≥ 28.0.
+  - [ ] T1 to T4 targets are unchanged.
+  - [ ] Implementation is split into S or M tickets for sim-engineer, ui-engineer, lore-writer and balance-qa, each with acceptance criteria.
+
+---
+
+## In progress
 
 ### SM-021: Age-30 summary screen
 - Owner: ui-engineer
 - Goal: Show the SM-020 summary when the run ends and let the player start a new run.
 - Files: `ui/main.ts`, `ui/style.css`
-- Depends on: SM-020
+- Depends on: SM-020 (done)
 - Size: S
 - Acceptance:
   - [ ] When `state.stage1Complete` is true after a step or on load, the UI routes to `screen-summary` and hides the Advance Week control.
@@ -158,30 +187,25 @@ Spec references: GDD sections 8.4 (business growth), 9.1 (property), 11 (shady t
   - [ ] Reloading the browser on a completed run shows the summary screen again.
   - [ ] `npm run build` is clean. Layout fits a 390px wide viewport with no horizontal scroll.
 
-### SM-022: Playable CLI with events and actions
-- Owner: sim-engineer
-- Goal: `npm run play` lets a human play the full Stage 1 loop in the terminal, including events, loans, businesses and property.
-- Files: `cli/play.ts`, `cli/commands.ts`, `tests/sim/cli.test.ts`
-- Depends on: SM-015
+### SM-026: Property app and business Grow action
+- Owner: ui-engineer
+- Goal: Expose `buyProperty`, `sellProperty` and `reinvestBusiness` in the phone UI so GDD 17.1 item 5 passes in the browser.
+- Files: `ui/main.ts`, `ui/style.css`
+- Depends on: SM-016, SM-017, SM-023 (all done)
 - Size: M
 - Acceptance:
-  - [ ] `cli/commands.ts` exports a pure `parseCommand(line: string)` returning a typed command or an error string, and a pure `runCommand(state, command, events)` returning the new state and output text. `cli/play.ts` only handles stdin/stdout.
-  - [ ] After each week, every pending event prints with its title, body and choices numbered from 1. Entering a number in range calls `applyEvent`. An out-of-range or non-numeric entry prints an error and re-prompts.
-  - [ ] Commands exist for every player action exported by `sim/index.ts` at merge time: hour allocation, `takeLoan`, `holdJob`, `quitJob`, `moveHousing`, `launchBusiness`, and `buyProperty`, `sellProperty`, `reinvestBusiness` when present.
-  - [ ] A sim error string from any action prints unchanged and leaves the state unchanged.
-  - [ ] A `status` command prints week, age, cash, energy, reputation, net worth, wealth tier, assets and liabilities.
-  - [ ] `npm run play -- 42` produces identical output for identical scripted stdin on two runs.
-  - [ ] Tests cover `parseCommand` for every command plus 3 malformed inputs, and `runCommand` for 1 event resolution and 1 failed action.
-
----
-
-## In progress
+  - [ ] A Property app lists the 3 `CONFIG.property.types` with price, weekly rent, minimum down payment and closing cost read from `CONFIG`.
+  - [ ] The player picks a down payment and a 520 or 1040 week term. Buy calls `buyProperty`. A sim error string shows unchanged and the state does not change.
+  - [ ] Owned properties show occupied or vacant, book value, mortgage principal and weekly payment. Sell calls `sellProperty`.
+  - [ ] The Business app shows each business's stage name, weeks at stage, reinvested amount and the next stage's week and cash requirement. Grow calls `reinvestBusiness` with a player-entered amount.
+  - [ ] Every action call sits inside the same try/catch guard as `step()`.
+  - [ ] `npm run build` is clean. Layout fits a 390px wide viewport with no horizontal scroll.
 
 ---
 
 ## Done
 
-### SM-001 through SM-012 (all completed 2026-11-09)
+### SM-001 through SM-014 (completed 2026-11-09)
 
 See `docs/STATE.md` for detailed change logs per ticket.
 
@@ -202,8 +226,28 @@ See `docs/STATE.md` for detailed change logs per ticket.
 | SM-013 | Wire event cards to UI | ui-engineer |
 | SM-014 | Net worth tracker and history log screens | ui-engineer |
 
+### SM-015 through TUNE-1 (completed 2026-11-09)
+
+| Ticket | Title | Owner | Summary |
+|---|---|---|---|
+| SM-015 | Split sim/index.ts into system modules | sim-engineer | `step()` is a fixed-order pipeline over `sim/systems/*`; golden 468-week test passes unchanged. |
+| SM-016 | Rental property system | sim-engineer | `buyProperty`/`sellProperty`, 3 Kingston types, mortgages, vacancy, appreciation, maintenance. |
+| SM-017 | Business growth stages | sim-engineer | 4 stages, `reinvestBusiness`, weekly failure draw per business. |
+| SM-018 | Shortcut events and delayed follow-ups | lore-writer | 18 shortcut and follow-up events in `content/events/stage1_shortcuts.json`; total 59 events. |
+| SM-019 | Balance strategies resolve event choices | balance-qa | Per-strategy choice rules, 300 seeds, $1M age, consequence rates, T1 to T4 pass/fail lines. |
+| SM-020 | End the run at week 468 with a summary | sim-engineer | `stage1Complete`, `summary`, `choiceLog`, `maxWealthTier`; `deserialize` fills defaults for old saves. |
+| SM-023 | Jobs, Bank, Housing and Business apps in the phone UI | ui-engineer | Loan, job, housing and launch actions in the browser; `step()` wrapped in try/catch. |
+| SM-024 | Rebalance shortcut events | lore-writer | Rebalanced 3 shortcut events; the loan shark event and `shady_loan_collector` are now reachable. |
+| SM-025 | Strategies use property and growth | balance-qa | Competent and greedy reinvest and buy property with cash buffers; T3 counts major consequences. |
+| TUNE-1 | Full-time wage 7.00 to 6.00 | sim-engineer | All 4 balance targets pass: competent $1M at 28.6, greedy 27.1, greedy major consequence 100%, passive W468 $44,190. |
+
 ---
 
 ## Requested
 
 ## Icebox
+
+### SM-022: Playable CLI with events and actions
+- Status: Cancelled 2026-11-09 by the human.
+- Reason: Focus is the phone UI. GDD 17.1 item 5 is verified in the UI (SM-023, SM-026) instead of `npm run play`.
+- Original owner: sim-engineer. Original scope: `cli/play.ts`, `cli/commands.ts`, `tests/sim/cli.test.ts`.

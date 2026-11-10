@@ -1,7 +1,7 @@
 # Game Design Document: Self Made — Stage 1 (Hustle)
 
 Owned by the pm agent. Source of truth for the Stage 1 vertical slice.
-Last updated: 2026-11-09 (balance targets restored to CONCEPT.md; property, business growth and end-of-run specs added).
+Last updated: 2026-11-09 (T3 counts major delayed consequences; full-time wage $6.00; expense shock spec 7.2.1; 17.1 item 5 verified in the UI).
 
 ---
 
@@ -171,8 +171,20 @@ Skills are integer values stored in `GameState.skills` (a `Record<string, number
 | Loan repayment | Weekly, automatic, once a loan is active | Principal + interest spread over loan term | Computed from loan state |
 | Event costs | On event choice | Varies; declared in event JSON | Defined in `/content` |
 
-Weekly burn = rent + living costs + loan repayment.
+Weekly burn = rent + living costs + loan repayment + expense shock.
 Weekly net = income - weekly burn.
+
+### 7.2.1 Expense shock (SM-034)
+
+Serves P1 and the balance suite. Wage-only runs had zero variance across 300 seeds.
+
+| Rule | Value | Config key |
+|---|---|---|
+| Chance per week | 2% (one `nextRandom` draw every week) | `expenses.shockChancePerWeek` = 0.02 |
+| Amount when hit | Uniform $100 to $600 (second draw), rounded to cents | `expenses.shockMinUsd` = 100, `expenses.shockMaxUsd` = 600 |
+| History | `unplanned_expense_<amount>`, tag `unplanned_expense` | — |
+
+Expected cost over 468 weeks: 9.36 shocks × $350 = $3,276. Expected passive W468 median about $40,900, inside the $50,000 cap.
 
 ### 7.3 Net worth
 
@@ -210,7 +222,7 @@ A job is a contract the player holds. It sets `baseHourlyWageUsd` and a minimum 
 |---|---|---|---|
 | Gig (no contract) | 0 | $3.50 | Always available; no loss risk |
 | Part-time | 20 | $5.00 | Lost if player allocates < 15 hours for 2 consecutive weeks |
-| Full-time | 40 | $7.00 | Lost if player allocates < 30 hours for 2 consecutive weeks; bars > 20 hustle hours/week |
+| Full-time | 40 | $6.00 (TUNE-1) | Lost if player allocates < 30 hours for 2 consecutive weeks; bars > 20 hustle hours/week |
 | Skilled (requires financial skill 3) | 40 | $12.00 | Unlocked by skill gate; lost on same terms as full-time |
 
 All wage values are stored in config under `cities.kingston.jobs`. Kingston wages reflect the 2026 Jamaican informal/gig economy, denominated in USD at a fixed exchange rate of 155 JMD/USD for the vertical slice (this simplification will be revisited in Stage 2).
@@ -436,7 +448,9 @@ CONCEPT.md: "the median competent strategy reaches $1M between age 27 and 32. A 
 |---|---|---|
 | Passive (40 work, 60 rest, no hustle, no loans, no business, lowest-risk event choices) | Stays under $50K | Median net worth at week 468 < $50,000 |
 | Competent (balanced work/hustle/study, avoids shady choices) | Median reaches $1M between age 27 and 32 (week 312 to 572) | Slice runs end at week 468, so pass if median net worth at week 468 ≥ $1,000,000, OR median age at first reaching $1M is between 27.0 and 30.0 |
-| Greedy (max immediate cash, takes shady choices) | Reaches $1M faster and triggers at least 1 delayed consequence | Median age at first $1M < competent median age at first $1M, AND ≥ 50% of greedy runs fire ≥ 1 delayed consequence event (section 11) |
+| Greedy (max immediate cash, takes shady choices) | Reaches $1M faster and triggers at least 1 major delayed consequence | Median age at first $1M < competent median age at first $1M, AND ≥ 50% of greedy runs fire ≥ 1 major delayed consequence event |
+
+A major delayed consequence event is a delayed consequence event (section 11) in which every choice has `cashUsd <= -250` or `reputation <= -10`. The report lists the "any delayed consequence" rate for reference only. It does not count toward T3.
 
 Age at first $1M = 21 + (first week with `netWorthUsd >= 1,000,000`) / 52, reported to 1 decimal. A run that never reaches $1M by week 468 counts as "not reached" and sorts above every reached value. If more than 50% of runs are "not reached", the median is "not reached".
 
@@ -536,6 +550,11 @@ All tunable numbers live in `sim/config.ts`. The table below extends the current
 | `property.vacancyWeeks` | number | 6 |
 | `property.appreciationPctPerYear` | number | 0.04 |
 | `property.sellingCostPct` | number | 0.05 |
+| `cities.kingston.jobs[].maxHustleHours` | number or null | Hustle cap while the job is held: full_time 20, skilled 20, others null (SM-030) |
+| `cities.kingston.jobs[].requiresSkills` | Record<string, number> | Skill gate to take the job: skilled `{ financial: 3 }`, others `{}` (SM-031) |
+| `expenses.shockChancePerWeek` | number | 0.02 (section 7.2.1) |
+| `expenses.shockMinUsd` | number | 100 |
+| `expenses.shockMaxUsd` | number | 600 |
 | `progression.stage1EndWeek` | number | Week the run ends (468) |
 | `progression.summaryTopChoices` | number | Choices listed on the summary (5) |
 
@@ -610,7 +629,7 @@ How each is verified:
 | 2 | Passive, competent and greedy medians at week 468 differ by ≥ $50,000 pairwise in the balance report |
 | 3 | ≥ 10 events in content offer a choice with `cashUsd <= -200` or a shady tag |
 | 4 | Balance report lists ≥ 3 distinct delayed consequence event ids that fired with a delay of 52 to 260 weeks across the 900 runs |
-| 5 | `takeLoan`, `launchBusiness` and `buyProperty` each succeed in tests and in `npm run play` |
+| 5 | `takeLoan`, `launchBusiness` and `buyProperty` each succeed in tests and in the phone UI (Bank, Business and Property apps). `npm run play` was cancelled with SM-022 |
 | 6 | UI reload restores the identical serialized state from localStorage |
 | 7 | `stage1Complete` is true after step 468; the UI shows the summary screen (SM-020, SM-021) |
 
@@ -621,7 +640,7 @@ How each is verified:
    - Passive median net worth at week 468 < $50,000.
    - Competent median net worth at week 468 ≥ $1,000,000, or competent median age at first $1M between 27.0 and 30.0.
    - Greedy median age at first $1M < competent median age at first $1M.
-   - ≥ 50% of greedy runs fire ≥ 1 delayed consequence event.
+   - ≥ 50% of greedy runs fire ≥ 1 major delayed consequence event (section 12).
 3. A human can play from week 1 to week 52 in the UI without a crash or uncaught error.
 4. The shoebox event fires before week 97 in every run.
 5. The first loan is obtainable in week 1 if reputation ≥ 15.
@@ -637,7 +656,8 @@ How each is verified:
 |---|---|---|---|
 | 2026-11-09 | Section 17 balance targets (passive $10K to $80K, competent $500K to $2M, greedy $800K to $3M at week 468, greedy "consequence tag" 50%) contradicted CONCEPT.md (competent median $1M at age 27 to 32, greedy faster plus ≥ 1 delayed consequence, passive under $50K). Section 12 curve (competent ~$900K at week 468) also missed the CONCEPT target. | CONCEPT targets restored in sections 12 and 17. Greedy metric changed from "consequence tag present" to "delayed consequence event fired". Human directed the fix. | Resolved |
 | 2026-11-09 | CONCEPT.md lists 40 events for the slice. SM-018 adds 11 to 13 events, for 51 to 53. | 40 treated as a floor. Human directed SM-018. | Resolved by human direction |
-| 2026-11-09 | Current passive median at week 468 is $62,400 (report.md), above the restored $50K cap. | Left to `/autotune` in Sprint C. | Open |
-| 2026-11-09 | Exit criterion 5 needs loan, business and property actions. No UI ticket exposes them; SM-022 exposes them in the CLI only. | Pending human decision on a UI action-screens ticket after Sprint B. | Open |
+| 2026-11-09 | Current passive median at week 468 is $62,400 (report.md), above the restored $50K cap. | TUNE-1 cut the full-time wage from $7.00 to $6.00. Passive W468 median is $44,190. | Resolved |
+| 2026-11-09 | Exit criterion 5 needs loan, business and property actions. No UI ticket exposes them; SM-022 exposes them in the CLI only. | Human cancelled SM-022 and chose the phone UI. SM-023 shipped loans, jobs, housing and business launch. SM-026 adds property and Grow. | Resolved by human direction |
+| 2026-11-09 | T3 counted any delayed consequence. CONCEPT requires "at least 1 major delayed consequence". | T3 counts major delayed consequences only (section 12 definition). | Resolved |
 
 Conflicts with CONCEPT.md or LORE.md are logged here and in STATE.md and escalated to the human.

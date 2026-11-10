@@ -8,6 +8,18 @@ Every agent reads this first and updates it last.
 - `sim/` skeleton: types, seeded RNG, config, a `step()` that advances one week.
 - One passing smoke test.
 - SM-001: `Asset` and `Liability` interfaces added to `sim/types.ts`. `GameState` extended with 11 new fields: `skills`, `trust`, `assets`, `liabilities`, `firedEvents`, `housingTier`, `overdueWeeks`, `burnoutWeeks`, `wealthTier`, `activeJobId`, `underHoursWeeks`. `newGame()` initializes all to zero values. `netWorthUsd()` now sums cash + asset book values minus liability principals. Round-trip serialize test added for all new fields.
+- SM-002 to SM-014: Stage 1 economy, energy, skills, loans, housing, tiers, events, jobs, 40 events, balance suite, phone UI, event cards, chart and history. Details in the per-ticket sections below.
+- SM-015: `sim/index.ts` split into `sim/systems/*`. `step()` runs a fixed-order pipeline (decision log). `tests/sim/golden.test.ts` locks a 468-week seed-42 run.
+- SM-016: Rental property. `buyProperty`, `sellProperty`, 3 Kingston types, 9% mortgages that amortize, 1.5% weekly vacancy for 6 weeks, 4% yearly appreciation, 1% maintenance, max 3 owned.
+- SM-017: Business growth. 4 stages, `reinvestBusiness`, 1 failure draw per business per week, doubled under energy 20.
+- SM-018: `content/events/stage1_shortcuts.json` holds 18 shortcut and delayed follow-up events. `content/tags.json` holds `shadyTags`. Total events: 59 across 8 files.
+- SM-019: Balance strategies resolve every pending event by rule. 300 seeds per strategy. Report has $1M age, consequence rates and T1 to T4 lines.
+- SM-020: Run ends at week 468. `stage1Complete`, `summary`, `choiceLog`, `maxWealthTier` added. `step()` throws `"Stage 1 is complete"` after that. `deserialize` fills defaults for saves made before SM-020.
+- SM-023: Phone UI has Jobs, Bank, Housing and Business apps. `step()` calls sit in try/catch.
+- SM-024: 3 shortcut events rebalanced. The loan shark event and `shady_loan_collector` are reachable.
+- SM-025: Competent and greedy strategies reinvest in businesses and buy property with cash buffers (8 weeks and 2 weeks of costs). T3 counts major delayed consequences.
+- TUNE-1: `cities.kingston.jobs[full_time].hourlyWageUsd` 7.00 to 6.00. All 4 balance targets pass (report.md, SM-025 run).
+- `content/index.ts` is the single event list. `npm run validate` fails when a file in `content/events/` is missing from it.
 
 ## SM-009 changes
 
@@ -22,13 +34,39 @@ Every agent reads this first and updates it last.
 
 ## In progress
 
-- Sprint A: SM-015 (sim-engineer) splits `sim/index.ts` into `sim/systems/` modules with a golden 468-week test. Runs alone. Sprint B (SM-016, SM-017, SM-018, SM-019, SM-022) starts after SM-015 merges. See `docs/BACKLOG.md` Tracks.
+- Nothing. SM-021 and SM-026 merged in f6346c7 (summary screen, Property app, Grow action, bank labels mortgages and excludes them from the loan cap). Verified in headless Chrome at 390 px.
+- Next: Sprint D tickets SM-027 to SM-036 in `docs/BACKLOG.md` Ready.
+
+## Balance status (report.md, SM-025 run with TUNE-1)
+
+| ID | Target | Actual | Result |
+|---|---|---|---|
+| T1 | Competent median $1M at age 27 to 30 | 28.6; 254 of 300 runs reach $1M; W468 median $1,251,299 | PASS |
+| T2 | Greedy median age at $1M below competent | 27.1 vs 28.6 | PASS |
+| T3 | ≥ 50% of greedy runs fire a major delayed consequence | 100.0% | PASS |
+| T4 | Passive W468 median under $50,000 | $44,190 | PASS |
+
+## Vertical slice 17.1 checklist status
+
+| # | Criterion | State | Evidence | Closes it |
+|---|---|---|---|---|
+| 1 | New run in Kingston at 21 with $2,000 | PASS | `newGame` defaults (SM-001). UI first load calls `newGame(Date.now() >>> 0, "kingston")` (SM-012) | — |
+| 2 | The 100-hour split changes outcomes | PASS | W468 medians: greedy $1,885,767, competent $1,251,299, passive $44,190. Smallest pairwise gap $634,468 (rule: ≥ $50,000) | — |
+| 3 | Events fire with costly choices | PASS | 18 shortcut events carry shady tags (SM-018). Rule needs 10 | — |
+| 4 | ≥ 3 delayed consequences fire 1 to 5 years after trigger | PARTIAL | All 14 delayed ids fire in at least 1 run. `minYearsAfterTag` ≥ 1 sets the 52-week floor. The report does not show delay, so the 260-week ceiling is unverified | SM-035 |
+| 5 | Take a loan, start a business, buy a property | PASS | Sim tests pass for all 3 (SM-005, SM-007, SM-016). UI has loans, business launch and growth (SM-023, SM-026) and the Property app (SM-026) | — |
+| 6 | Close the browser and reload the save | PASS (implementation) | `serialize`/`deserialize` to localStorage (SM-012). Old saves get defaults (SM-020). No human reload check logged | Human playtest |
+| 7 | Run ends at 30 with a summary screen | PASS | Sim ends at week 468 with a summary (SM-020). Summary screen with New run button (SM-021) | — |
 
 ## Open issues
 
-- Passive median at week 468 is $62,400 (report.md). The restored target is under $50,000. `/autotune` in Sprint C owns it.
-- Exit criterion 5 (take a loan, start a business, buy a property) has no UI ticket. SM-022 covers the CLI only. A UI action-screens ticket needs a human decision after Sprint B.
-- Loan `principalUsd` never decreases during repayment (`step()` only decrements `weeksRemaining`). Net worth overstates debt until the loan ends. Not ticketed. SM-016 mortgages amortize principal; loans do not.
+- Growth saturates early. Competent reaches business stage 4 at median age 24.8. Greedy at 25.0. Both own 3 properties by W156. Ages 25 to 30 have no growth decision. SM-036.
+- Passive W468 net worth has zero variance: p10 = median = p90 = $44,190. SM-034.
+- Loan `principalUsd` never decreases during repayment. Net worth overstates debt until the loan ends. SM-033.
+- The skilled job ($12.00) is open at week 0, against GDD 8.1. SM-031, then SM-032 and `/autotune`.
+- Competent misses $1M in 46 of 300 runs. W156 p10 is $124,789 vs median $165,046. T1 still passes on the median.
+- No bankruptcy floor. Random runs end at -$58,035 median net worth and get evicted in 99.7% of runs. Not ticketed. Stage 1 has no game-over by design (GDD 15).
+- Two delayed events never fire for a scored strategy: `followup_partner_sues` and `followup_tobias_calls_ledger` (random only). Not a target miss.
 
 ## SM-010 changes
 
@@ -186,3 +224,18 @@ Every agent reads this first and updates it last.
 | 2026-11-09 | Shady tags live in `content/tags.json` (lore-writer) | Balance suite classifies choices without hardcoding story data in code |
 | 2026-11-09 | CONCEPT lists 40 slice events; SM-018 brings the total to 51 to 53. 40 treated as a floor | Human directed SM-018 |
 | 2026-11-09 | Sprint tracks: A = SM-015 alone; B = SM-016, SM-017, SM-018, SM-019, SM-022 in parallel; C = SM-020, SM-021, then `/autotune` | SM-015 touches every sim file and would conflict with parallel sim work |
+| 2026-11-09 | `step()` pipeline order: skills, income, businessIncome, property, housingCost, loanRepayment, cashflow, eviction, jobLoss, energy, time, tiers, then events and endOfRun | SM-015 kept the pre-refactor order so the golden test passed unchanged. New systems slot into this list and STATE.md records each change |
+| 2026-11-09 | RNG draws happen only when a business or property exists: 1 failure draw per business, 1 vacancy draw per occupied property | Runs without assets keep their pre-SM-016 RNG stream, so the golden run and older tests stay valid. SM-034 ends this rule with 1 draw every week |
+| 2026-11-09 | Mortgages do not count toward `loans.maxSimultaneous` | Property secures the mortgage. Counting it would block a tier 1 owner from both loans |
+| 2026-11-09 | Business growth timing: income pays at the start-of-week rate; the failure draw uses the start-of-week stage; survivors gain 1 week at stage, then advance at most 1 stage when both thresholds are met | A business that grows or fails still pays that week, and growth lands on the step where `weeksAtStage` reaches the minimum, never before |
+| 2026-11-09 | Golden re-records: SM-017 (business failure draws), SM-020 (hash only, new state fields; numeric values unchanged), TUNE-1 (full-time wage changes cash) | SM-015 rule: every behavior change re-records golden values and logs why |
+| 2026-11-09 | T3 counts major delayed consequences only. Major = every choice has `cashUsd <= -250` or `reputation <= -10`. GDD section 12 and 17.2 updated | CONCEPT requires "at least 1 major delayed consequence". The "any" rate stays in the report for reference |
+| 2026-11-09 | `content/index.ts` is the single event list. UI, balance suite and tests import it. `npm run validate` fails when a file in `content/events/` is missing from it | One list means a new event file reaches the UI, the balance suite and the tests together. Validate catches a file left out |
+| 2026-11-09 | SM-018 shipped 18 events in one file, `stage1_shortcuts.json`, not two files. Total events 59, above the 51 to 53 in the ticket | Accepted. 40 is a floor (earlier row). Ticket wording was a file-layout detail, not a pillar |
+| 2026-11-09 | New LORE names from SM-018 and SM-024: Bigga, loan shark on Waltham Park Road; Mr. Lyn, Princess Street wholesaler; Detective Sergeant Morrison at Half Way Tree; a Duke Street law office; a downtown registry clerk; Tobias Wren's valuer; Maxfield Recovery Services, which buys Bigga's debts; trust key `tobias_wren` | Introduced in content by lore-writer, who owns LORE.md. Later content must reuse these names, not invent new ones for the same roles |
+| 2026-11-09 | SM-022 (terminal play mode) cancelled by the human. Moved to Icebox. GDD 17.1 item 5 is verified in the phone UI | Human direction: focus is the phone UI |
+| 2026-11-09 | SM-026 created for the in-progress Property app and Grow action | Work started without a ticket. Commits need an id |
+| 2026-11-09 | Passive variance comes from a weekly expense shock: 2% chance, $100 to $600 (GDD 7.2.1) | Expected cost $3,276 over 468 weeks keeps passive near $40,900, under the $50K cap. A wage raise would push passive past the cap |
+| 2026-11-09 | The skilled job gate (financial 3, GDD 8.1) is enforced in `holdJob` by SM-031. SM-032 updates the competent strategy | The GDD already required it. `holdJob` checks only that the job id exists |
+| 2026-11-09 | Loan liabilities get required `kind` and `aprPct` (SM-027) before amortization (SM-033) and unique ids (SM-029). The three run in sequence | All three edit `sim/systems/loans.ts`. Amortization needs the stored APR |
+| 2026-11-09 | Late-slice depth is a pm design ticket (SM-036), not a config change | balance-qa found no config fix. New decisions must stay in Stage 1 scope: one person, no employees, Kingston only |
