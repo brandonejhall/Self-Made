@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deserialize, newGame, serialize, step, type WeekInput } from "../../sim";
+import { deserialize, newGame, serialize, step, type Asset, type Liability, type WeekInput } from "../../sim";
 
 const week: WeekInput = { hours: { work: 45, hustle: 10, rest: 45 } };
 
@@ -40,5 +40,36 @@ describe("sim skeleton", () => {
   it("round-trips through serialize", () => {
     const s = step(newGame(9), week);
     expect(deserialize(serialize(s))).toEqual(s);
+  });
+
+  it("round-trips a state with all new fields populated", () => {
+    const asset: Asset = {
+      id: "asset-001",
+      type: "rental_property",
+      bookValueUsd: 50000,
+      weeklyIncomeUsd: 150,
+    };
+    const liability: Liability = {
+      id: "loan-001",
+      principalUsd: 20000,
+      weeklyPaymentUsd: 100,
+      weeksRemaining: 200,
+    };
+    const base = newGame(99);
+    const enriched = {
+      ...base,
+      skills: { hustle: 2, networking: 1 },
+      trust: { mentor_daryl: 50 },
+      assets: [asset],
+      liabilities: [liability],
+      firedEvents: ["evt_first_paycheck", "evt_met_mentor"],
+      housingTier: 1,
+      overdueWeeks: 0,
+      burnoutWeeks: 0,
+      wealthTier: 0,
+      activeJobId: "job_warehouse",
+      underHoursWeeks: 0,
+    };
+    expect(deserialize(serialize(enriched))).toEqual(enriched);
   });
 });

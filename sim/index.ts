@@ -4,7 +4,7 @@ import { CONFIG, type CityId } from "./config";
 import { nextRandom } from "./rng";
 import type { GameState, WeekInput } from "./types";
 
-export type { GameState, WeekInput, HistoryEntry } from "./types";
+export type { GameState, WeekInput, HistoryEntry, Asset, Liability } from "./types";
 export { CONFIG } from "./config";
 
 export function newGame(seed: number, cityId: CityId = "kingston"): GameState {
@@ -20,6 +20,17 @@ export function newGame(seed: number, cityId: CityId = "kingston"): GameState {
     reputation: CONFIG.start.reputation,
     history: [],
     flags: {},
+    skills: {},
+    trust: {},
+    assets: [],
+    liabilities: [],
+    firedEvents: [],
+    housingTier: 0,
+    overdueWeeks: 0,
+    burnoutWeeks: 0,
+    wealthTier: 0,
+    activeJobId: null,
+    underHoursWeeks: 0,
   };
 }
 
@@ -70,7 +81,9 @@ export function step(state: GameState, input: WeekInput): GameState {
 }
 
 export function netWorthUsd(state: GameState): number {
-  return state.cashUsd;
+  const assetValue = state.assets.reduce((sum, a) => sum + a.bookValueUsd, 0);
+  const liabilityValue = state.liabilities.reduce((sum, l) => sum + l.principalUsd, 0);
+  return round2(state.cashUsd + assetValue - liabilityValue);
 }
 
 export function serialize(state: GameState): string {

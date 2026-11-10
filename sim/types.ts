@@ -6,6 +6,20 @@ export interface HistoryEntry {
   tags: string[];
 }
 
+export interface Asset {
+  id: string;
+  type: string;
+  bookValueUsd: number;
+  weeklyIncomeUsd?: number; // for businesses / rental
+}
+
+export interface Liability {
+  id: string;
+  principalUsd: number;
+  weeklyPaymentUsd: number;
+  weeksRemaining: number;
+}
+
 export interface GameState {
   version: 1;
   seed: number;
@@ -18,6 +32,17 @@ export interface GameState {
   reputation: number;
   history: HistoryEntry[];
   flags: Record<string, boolean>;
+  skills: Record<string, number>;
+  trust: Record<string, number>;
+  assets: Asset[];
+  liabilities: Liability[];
+  firedEvents: string[];
+  housingTier: number;
+  overdueWeeks: number;
+  burnoutWeeks: number;
+  wealthTier: number;
+  activeJobId: string | null;
+  underHoursWeeks: number;
 }
 
 export interface WeekInput {
