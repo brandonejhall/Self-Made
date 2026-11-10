@@ -22,7 +22,13 @@ Every agent reads this first and updates it last.
 
 ## In progress
 
-- Nothing.
+- Sprint A: SM-015 (sim-engineer) splits `sim/index.ts` into `sim/systems/` modules with a golden 468-week test. Runs alone. Sprint B (SM-016, SM-017, SM-018, SM-019, SM-022) starts after SM-015 merges. See `docs/BACKLOG.md` Tracks.
+
+## Open issues
+
+- Passive median at week 468 is $62,400 (report.md). The restored target is under $50,000. `/autotune` in Sprint C owns it.
+- Exit criterion 5 (take a loan, start a business, buy a property) has no UI ticket. SM-022 covers the CLI only. A UI action-screens ticket needs a human decision after Sprint B.
+- Loan `principalUsd` never decreases during repayment (`step()` only decrements `weeksRemaining`). Net worth overstates debt until the loan ends. Not ticketed. SM-016 mortgages amortize principal; loans do not.
 
 ## SM-010 changes
 
@@ -169,3 +175,14 @@ Every agent reads this first and updates it last.
 | 2026-11-09 | Passive strategy switched from 20hrs part-time to 40hrs full-time in balance suite | Part-time 20hrs ($100/week) < $150 living costs → death spiral; full-time 40hrs ($280/week) → +$130/week net |
 | 2026-11-09 | Greedy strategy uses energy-neutral hours (work=35+hustle=15+rest=50) in balance suite | Aggressive hours (work=40+hustle=20+rest=40) drain energy faster than recovery → burnout in 4 weeks → income halved → death spiral |
 | 2026-11-09 | Balance targets for competent and greedy not met; SM-015 ticket created | Missing mechanics: property appreciation, business growth events, higher-tier investments. Targets assume future systems |
+| 2026-11-09 | CONFLICT: GDD section 17 targets (passive $10K to $80K, competent $500K to $2M, greedy $800K to $3M at week 468, greedy "consequence tag" 50%) and the section 12 curve contradicted CONCEPT.md | CONCEPT.md is the source of truth. Human flagged it |
+| 2026-11-09 | FIX: CONCEPT targets restored in GDD sections 12 and 17. Passive median W468 < $50K. Competent median W468 ≥ $1M or median age at first $1M in 27.0 to 30.0. Greedy median age at first $1M < competent, and ≥ 50% of greedy runs fire ≥ 1 delayed consequence event. Logged in GDD section 18 | Slice runs end at week 468, so the age 27 to 32 band is tested as 27 to 30 or a week-468 median ≥ $1M |
+| 2026-11-09 | Greedy consequence metric is "delayed consequence event fired", not "consequence tag present" | CONCEPT requires the consequence to trigger, not just the tag to exist |
+| 2026-11-09 | Balance suite moves from 100 to 300 seeds per strategy | Human direction; tighter medians for pass/fail |
+| 2026-11-09 | Old SM-015 (pm-owned economy tuning across sim/ and content/) deleted | It broke folder ownership. Replaced by SM-015 to SM-022 with single owners |
+| 2026-11-09 | Run always ends at week 468. Reaching $1M earlier sets `stage2_unlocked` and play continues | Stage 2 is out of slice scope; the age-30 summary is an exit criterion |
+| 2026-11-09 | Property spec: 3 Kingston types ($30K, $65K, $150K), 20% min down, 3% closing, 9% APR, 520 or 1040 week terms, 1% maintenance, 1.5% weekly vacancy for 6 weeks, 4% yearly appreciation, 5% selling cost, max 3 owned | Net yield after costs about 8%, near break-even with a 9% mortgage. Leverage on appreciation drives the gain. `/autotune` adjusts |
+| 2026-11-09 | Business growth: 4 stages, income ×1/×2/×4/×8, entry at 26/52/78 weeks plus $5K/$20K/$60K reinvestment, weekly failure 0.30%/0.15%/0.10%/0.05%, doubled under energy 20 | Gives competent play a path to $1M by age 30 through reinvestment. Book value stays at cost basis so growth cannot inflate net worth |
+| 2026-11-09 | Shady tags live in `content/tags.json` (lore-writer) | Balance suite classifies choices without hardcoding story data in code |
+| 2026-11-09 | CONCEPT lists 40 slice events; SM-018 brings the total to 51 to 53. 40 treated as a floor | Human directed SM-018 |
+| 2026-11-09 | Sprint tracks: A = SM-015 alone; B = SM-016, SM-017, SM-018, SM-019, SM-022 in parallel; C = SM-020, SM-021, then `/autotune` | SM-015 touches every sim file and would conflict with parallel sim work |

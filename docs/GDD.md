@@ -1,7 +1,7 @@
 # Game Design Document: Self Made — Stage 1 (Hustle)
 
 Owned by the pm agent. Source of truth for the Stage 1 vertical slice.
-Last updated: 2026-11-09.
+Last updated: 2026-11-09 (balance targets restored to CONCEPT.md; property, business growth and end-of-run specs added).
 
 ---
 
@@ -27,7 +27,7 @@ Taken verbatim from CONCEPT.md. Every system must serve at least one.
 **Core resources:** Cash (USD), Energy, Reputation
 **Key narrative beats:** grandmother's death and shoebox (year 2), first loan (available from year 1 at tier 0), first business (tier 1), first partner (optional, tier 1), Zurich mystery opens (year 2)
 
-Stage 1 ends when Stage 2 starts. Stage 2 starts when the player reaches Tier 2: net worth $1,000,000 USD. Stage 1 also ends at age 30 regardless — a time-out loss if the player has not reached $1M by week 468.
+Stage 1 runs from week 0 to week 468 (age 21 to 30). In the vertical slice the run always ends at week 468 with the age-30 summary screen (section 15). Reaching Tier 2 (net worth $1,000,000 USD) before week 468 sets the `stage2_unlocked` flag and the run continues to week 468. Stage 2 is not built in the slice.
 
 ---
 
@@ -52,7 +52,8 @@ Reach the next wealth tier. Each tier is a visible label that changes the event 
 | First business launched | Tier 1 | Business income replaces or supplements job income |
 | First $100,000 | ~Week 100 to 150 | Early business or property play |
 | First property | Tier 1 | Asset column appears in net worth |
-| First $1,000,000 (Tier 2) | ~Week 300 to 468 | Stage 1 exit; Stage 2 begins |
+| First $1,000,000 (Tier 2) | Week 312 to 468 (age 27 to 30) for the competent strategy | Sets `stage2_unlocked`; run continues to week 468 |
+| Age 30 (week 468) | Week 468 | Run ends; summary screen |
 
 ### Multi-session loop
 Stage 1 is 468 turns of compounding decisions. The player never replays turns. The interest rate on the first loan, the tags earned in year 1, and the partner chosen (or not) are all permanent. Seeing the consequences emerge is the multi-session motivation.
@@ -157,8 +158,8 @@ Skills are integer values stored in `GameState.skills` (a `Record<string, number
 |---|---|---|
 | Wage job | Player allocates work hours. Each work hour earns `baseHourlyWageUsd`. | `cities.kingston.baseHourlyWageUsd` = $3.50 |
 | Side hustle | Player allocates hustle hours. Each hustle hour earns a random amount between `hustleHourlyMinUsd` and `hustleHourlyMaxUsd`, modified by reputation and hustle skill. | `hustleHourlyMinUsd` = $0, `hustleHourlyMaxUsd` = $9 |
-| Business income | Unlocked at Tier 1. Passive weekly income from an owned business. Amount set when business is launched; grows by business performance events. | Defined per business type in config |
-| Rental income | Unlocked at Tier 1 when the player buys property. Passive weekly income equal to `weeklyRentCollected`. | Defined per housing tier |
+| Business income | Unlocked at Tier 1. Passive weekly income from an owned business. Base amount × growth stage multiplier (section 8.4). | `businesses.types`, `businesses.stages` |
+| Rental income | Unlocked at Tier 1 when the player buys a rental property. Weekly rent while occupied (section 9.1). | `property.types` |
 | Loan proceeds | A one-time cash injection. Added to cash immediately; creates a liability. | See section 7.4 |
 
 ### 7.2 Expenses
@@ -239,6 +240,27 @@ The player can launch a first business once they reach Tier 1 ($10,000 net worth
 
 Business values are stored in config under `businesses.types`. Business income is added to `cashUsd` each week automatically once the business is active. Business events can increase or decrease weekly income, trigger costs, or offer growth opportunities.
 
+### 8.4 Business growth (SM-017)
+
+Serves P2 (the world reacts to your size) and the 10-minute loop. Every business asset carries `stage` (1 to 4), `weeksAtStage` and `reinvestedAtStageUsd`.
+
+| Stage | Name | Income multiplier on base weekly income | Min weeks at previous stage to enter | Reinvestment at previous stage to enter | Weekly failure chance |
+|---|---|---|---|---|---|
+| 1 | Startup | 1.0 | entered at launch | entered at launch | 0.30% |
+| 2 | Established | 2.0 | 26 | $5,000 | 0.15% |
+| 3 | Growing | 4.0 | 52 | $20,000 | 0.10% |
+| 4 | Scaled | 8.0 | 78 | $60,000 | 0.05% |
+
+Rules:
+
+1. `reinvestBusiness(state, assetId, amountUsd)` deducts `amountUsd` from cash and adds it to `reinvestedAtStageUsd` and to the asset's `bookValueUsd`. Errors: unknown asset id, asset is not a business, `amountUsd <= 0`, `cashUsd < amountUsd`, business already at stage 4.
+2. In `step()`, a business advances one stage when both `weeksAtStage >= minWeeks` and `reinvestedAtStageUsd >= reinvestment` for the next stage. On advance: `stage += 1`, `weeksAtStage = 0`, `reinvestedAtStageUsd = 0`, `weeklyIncomeUsd = base × multiplier`, history tag `grew_<businessTypeId>_stage<N>`.
+3. Book value = launch cost + all reinvestment. Growth never raises book value by itself.
+4. Failure: each week, one `nextRandom` draw per business. If the draw is below the stage failure chance the business fails. The chance doubles while energy < 20 (`energy.burnoutThreshold`). On failure: the asset is removed, history tag `lost_business_<businessTypeId>`, reputation -5 (clamped at 0).
+5. Max one stage advance per business per week.
+
+Scaled income per business type: food stall $1,440/week, delivery service $2,080/week, short-term rental room $1,760/week, content brand $640/week. Fastest path from launch to stage 4: 156 weeks and $85,000 reinvestment.
+
 ---
 
 ## 9. Housing System
@@ -256,6 +278,34 @@ Housing is an automatic weekly expense. The player starts in the base tier. Movi
 **Eviction:** If `cashUsd` falls below 0 at the end of a week, an "overdue rent" counter increments. If overdue rent reaches 2, the eviction event fires. Eviction forces the player to tier 0 housing, pays back any owed rent from future income at $20/week forced deduction, and appends tag `evicted` to history. The `evicted` tag increases insurance premiums in Stage 2 and reduces trust with Halima Yusuf by 20.
 
 Rent values are in config under `cities.kingston.housingTiers`.
+
+Housing tier 4 (owner-occupied) keeps its existing behavior. Rental properties in section 9.1 are investments and do not change `housingTier`.
+
+### 9.1 Rental property (SM-016)
+
+Serves P2 and the CONCEPT milestone "first asset". Requires `wealthTier >= 1`. Max 3 owned properties in Stage 1 (`property.maxOwned`).
+
+| Property type id | Name | Price | Weekly rent when occupied | Gross yield per year |
+|---|---|---|---|---|
+| `kgn_studio` | Studio, Half Way Tree | $30,000 | $60 | 10.4% |
+| `kgn_two_bed` | 2-bed apartment, New Kingston | $65,000 | $120 | 9.6% |
+| `kgn_house` | 3-unit house, Barbican | $150,000 | $260 | 9.0% |
+
+| Rule | Value | Config key |
+|---|---|---|
+| Minimum down payment | 20% of price | `property.minDownPaymentPct` = 0.20 |
+| Closing cost at purchase | 3% of price, paid in cash, not added to book value | `property.closingCostPct` = 0.03 |
+| Mortgage APR | 9% | `property.mortgageAprPct` = 9 |
+| Mortgage terms | 520 or 1040 weeks | `property.mortgageTermWeeksOptions` = [520, 1040] |
+| Mortgage payment | Same amortization formula as section 7.4 | — |
+| Principal reduction | Each week principal -= (payment - principal × APR / 100 / 52), rounded to cents | — |
+| Maintenance | 1% of current book value per year, charged weekly as bookValue × 0.01 / 52 | `property.maintenancePctPerYear` = 0.01 |
+| Vacancy start | 1.5% chance per occupied property per week, one `nextRandom` draw per property | `property.vacancyChancePerWeek` = 0.015 |
+| Vacancy length | 6 weeks; no rent while vacant; maintenance and mortgage still charged | `property.vacancyWeeks` = 6 |
+| Appreciation | Book value × 1.04 on every 52-week anniversary of purchase, rounded to cents | `property.appreciationPctPerYear` = 0.04 |
+| Sale | Proceeds = bookValue × (1 - 0.05) - remaining mortgage principal; proceeds can be negative | `property.sellingCostPct` = 0.05 |
+
+Actions: `buyProperty(state, propertyTypeId, downPaymentUsd, termWeeks)` and `sellProperty(state, assetId)`. A down payment equal to the price creates no mortgage. Purchase adds an `Asset` with `kind: "property"` and a `Liability` with `kind: "mortgage"` linked by `propertyId`. Tags: `bought_<propertyTypeId>`, `sold_property`.
 
 ---
 
@@ -299,8 +349,10 @@ The vertical slice targets 40 events across these categories:
 | World clock | 4 | Era 1 lore beats; Kingston news |
 | Consequence | 5 | Delayed events triggered by earlier tags |
 | Hustle/work | 4 | Job offers, hustle tips, workplace events |
+| Shortcut (SM-018) | 8 to 10 | Shady or shortcut choices: cash deals, cutting out a partner, skipping permits, loan-shark money |
+| Shortcut consequence (SM-018) | 3 minimum | Delayed follow-ups firing 1 to 4 years after a shortcut tag |
 
-Total: 40
+Total: 40 authored in SM-009, 51 to 53 after SM-018. CONCEPT.md lists 40 events; the slice treats 40 as a floor (see section 18).
 
 ### 10.4 Effect fields
 
@@ -354,6 +406,14 @@ Stage 1 canonical consequence chain:
 3. Player is evicted → tag `evicted` → Halima Yusuf trust -20; insurance cost +10% in Stage 2
 4. Player ignores sibling money request → tag `ignored_sibling_ask` → at year +1, sibling trust drops 30 and a loyalty event is blocked
 
+### Shady tags
+
+`content/tags.json` holds the canonical `shadyTags` array (SM-018). Starting list: `took_shady_loan`, `took_loan_shark`, `cash_deal_shady`, `cut_out_partner`, `cut_partner_first`, `skipped_permit`, `undeclared_income`. A choice is shady when its `addTags` contains any shady tag. The balance suite reads this file to classify choices.
+
+### Delayed consequence event
+
+A delayed consequence event is any event whose trigger sets `minYearsAfterTag`. Its delay is the number of weeks between the week the required tag was first added and the week the event fires. CONCEPT.md requires delays of 1 to 5 years (52 to 260 weeks).
+
 ---
 
 ## 12. Tier / Progression
@@ -368,26 +428,31 @@ Stage 1 canonical consequence chain:
 
 Tier is recalculated every turn. Downward tier movement is possible — if net worth falls below the tier floor due to losses, the tier reverts and the unlocked actions become unavailable until net worth recovers.
 
-### Expected progression curve
+### Balance targets (from CONCEPT.md, restored 2026-11-09)
 
-| Play style | Age 24 (week 156) | Age 27 (week 312) | Age 30 (week 468) |
+CONCEPT.md: "the median competent strategy reaches $1M between age 27 and 32. A greedy strategy reaches it faster but triggers at least 1 major delayed consequence. A passive strategy stays under $50K."
+
+| Strategy | Target | Pass rule in `tests/balance/report.md` |
+|---|---|---|
+| Passive (40 work, 60 rest, no hustle, no loans, no business, lowest-risk event choices) | Stays under $50K | Median net worth at week 468 < $50,000 |
+| Competent (balanced work/hustle/study, avoids shady choices) | Median reaches $1M between age 27 and 32 (week 312 to 572) | Slice runs end at week 468, so pass if median net worth at week 468 ≥ $1,000,000, OR median age at first reaching $1M is between 27.0 and 30.0 |
+| Greedy (max immediate cash, takes shady choices) | Reaches $1M faster and triggers at least 1 delayed consequence | Median age at first $1M < competent median age at first $1M, AND ≥ 50% of greedy runs fire ≥ 1 delayed consequence event (section 11) |
+
+Age at first $1M = 21 + (first week with `netWorthUsd >= 1,000,000`) / 52, reported to 1 decimal. A run that never reaches $1M by week 468 counts as "not reached" and sorts above every reached value. If more than 50% of runs are "not reached", the median is "not reached".
+
+### Checkpoint guide rails (not pass/fail)
+
+| Strategy | Week 156 (age 24) | Week 312 (age 27) | Week 468 (age 30) |
 |---|---|---|---|
-| Passive (rest-heavy, no hustle) | ~$5,000 | ~$12,000 | ~$30,000 |
-| Competent (balanced work/hustle/study) | ~$18,000 | ~$180,000 | ~$900,000 |
-| Greedy (maximize income, skip rest, take loans, shady deals) | ~$30,000 | ~$450,000 | ~$1,500,000 |
+| Passive | ≤ $20,000 | ≤ $35,000 | < $50,000 |
+| Competent | ≥ $60,000 | ≥ $300,000 | ≥ $1,000,000 |
+| Greedy | ≥ competent median | ≥ competent median | ≥ competent median |
 
-Balance target from CONCEPT.md: median competent strategy reaches $1M between age 27 and 32.
+The balance suite (`npm run balance`) runs 300 headless seeds (0 to 299) per strategy.
 
-The balance suite (`npm run balance`) must run 100 headless seeds with each of three scripted strategies and verify these medians hold within ±20%.
+### End of run
 
-### Stage 1 → Stage 2 exit conditions
-
-All must be true:
-
-1. `netWorthUsd(state)` ≥ $1,000,000
-2. `state.week` ≤ 468
-
-If condition 2 fails before condition 1, the game presents a "time-out" outcome screen and offers a restart.
+Reaching $1M sets `stage2_unlocked`. The run ends when `state.week` reaches 468: `stage1Complete` is set, a summary is built (section 15), and `step()` throws `"Stage 1 is complete"` on any further call.
 
 ---
 
@@ -395,7 +460,7 @@ If condition 2 fails before condition 1, the game presents a "time-out" outcome 
 
 The seeded PRNG is `mulberry32` implemented in `sim/rng.ts`. Its state lives in `GameState.rngState`. All randomness in the simulation passes through `nextRandom(rngState)` or `nextInt(rngState, min, max)` — never through `Math.random()`, `Date.now()`, or any external source.
 
-The UI may seed `rngState` with `Date.now() >>> 0` on new game creation. The balance suite uses a fixed seed sequence (0, 1, 2, ... 99) for reproducibility.
+The UI may seed `rngState` with `Date.now() >>> 0` on new game creation. The balance suite uses a fixed seed sequence (0, 1, 2, ... 299) for reproducibility.
 
 Determinism contract: `newGame(seed)` followed by the identical sequence of `step(state, input)` calls on any machine, in any browser, at any time must produce bit-identical `GameState` values.
 
@@ -457,6 +522,22 @@ All tunable numbers live in `sim/config.ts`. The table below extends the current
 | `progression.evictionForcedRepayPerWeek` | number | Weekly forced deduction after eviction (20) |
 | `events.maxPerWeek` | number | Maximum events drawn per turn (2) |
 | `events.defaultWeight` | number | Default event weight if not specified (10) |
+| `businesses.stages` | array | Per stage: incomeMult (1, 2, 4, 8), minWeeksToEnter (0, 26, 52, 78), reinvestToEnterUsd (0, 5000, 20000, 60000), weeklyFailureChance (0.003, 0.0015, 0.001, 0.0005) |
+| `businesses.burnoutFailureMult` | number | Failure chance multiplier while energy < 20 (2) |
+| `businesses.failureReputationPenalty` | number | Reputation lost on business failure (5) |
+| `property.types` | array | Per type: id, priceUsd, weeklyRentUsd (section 9.1) |
+| `property.maxOwned` | number | Max rental properties owned (3) |
+| `property.minDownPaymentPct` | number | 0.20 |
+| `property.closingCostPct` | number | 0.03 |
+| `property.mortgageAprPct` | number | 9 |
+| `property.mortgageTermWeeksOptions` | number[] | [520, 1040] |
+| `property.maintenancePctPerYear` | number | 0.01 |
+| `property.vacancyChancePerWeek` | number | 0.015 |
+| `property.vacancyWeeks` | number | 6 |
+| `property.appreciationPctPerYear` | number | 0.04 |
+| `property.sellingCostPct` | number | 0.05 |
+| `progression.stage1EndWeek` | number | Week the run ends (468) |
+| `progression.summaryTopChoices` | number | Choices listed on the summary (5) |
 
 ---
 
@@ -466,10 +547,23 @@ All tunable numbers live in `sim/config.ts`. The table below extends the current
 |---|---|---|
 | Eviction | Cash < 0 for 2 consecutive weeks | Player forced to tier 0 housing; tag `evicted` added; debt repayment enforced |
 | Burnout lock | Energy = 0 for 2 consecutive weeks | `burnout_active` flag set; hour cap applies until energy > 50 |
-| Time-out | Week 468 without reaching $1M net worth | Outcome screen: summary of run; option to restart |
+| End of Stage 1 | `state.week` reaches 468, regardless of net worth | `stage1Complete = true`; summary built; summary screen with New run button (SM-020, SM-021) |
 | Debt spiral | Loan missed payment (not yet implemented in Stage 1; placeholder for Stage 2) | — |
 
-There is no "game over" screen in Stage 1. The player can always continue from any fail state, but consequences accumulate.
+There is no "game over" screen in Stage 1. The player can always continue from any fail state until week 468, but consequences accumulate.
+
+### 15.1 Age-30 summary (SM-020)
+
+`state.summary` fields:
+
+| Field | Definition |
+|---|---|
+| `finalNetWorthUsd` | `netWorthUsd(state)` at week 468 |
+| `wealthTierReached` | Highest `wealthTier` held at any week of the run |
+| `topChoices` | Up to 5 event choices with the largest absolute net worth effect, sorted descending by absolute effect, ties by earlier week. Each item: `week`, `eventId`, `choiceIndex`, `netWorthDeltaUsd` |
+| `consequencesFired` | Ids of fired delayed consequence events (section 11), in firing order |
+
+Net worth effect of a choice = `netWorthUsd` after `applyEvent` minus `netWorthUsd` before. `applyEvent` appends each choice to `state.choiceLog`.
 
 ---
 
@@ -486,6 +580,8 @@ The phone is the lore delivery channel for Stage 1 (per LORE.md). The UI is mobi
 | History log | Scrollable list of `HistoryEntry` items; filterable by tag |
 | Loan screen | Available loans, active loans, payment schedule |
 | Business screen | Unlocked at Tier 1; shows active businesses and weekly income |
+| Property screen | Unlocked at Tier 1; owned properties, occupancy, mortgage balance |
+| Age-30 summary | Shown at week 468; final net worth, tier reached, top 5 choices, consequences fired, New run button |
 | Settings | Seed display (for sharing runs), save/load from localStorage |
 
 UI screens are described for scope; the ui-engineer owns implementation. No screen blocks the vertical slice until the sim produces meaningful output.
@@ -494,23 +590,54 @@ UI screens are described for scope; the ui-engineer owns implementation. No scre
 
 ## 17. Vertical Slice Scope and Exit Criteria
 
-The vertical slice is Stage 1, Kingston only, 40 events. It is complete when ALL of the following are true:
+The vertical slice is Stage 1, Kingston only, 40 or more events. It is complete when every item in both lists is true.
+
+### 17.1 Player-facing exit criteria
+
+1. New run in Kingston at 21 with $2,000.
+2. The 100-hour weekly split changes outcomes.
+3. Events fire with costly choices.
+4. At least 3 delayed consequences fire 1 to 5 years after their trigger in real runs.
+5. The player can take a loan, start a business and buy a property.
+6. Close the browser and reload the save.
+7. The run ends at age 30 (week 468) with a summary screen.
+
+How each is verified:
+
+| # | Verification |
+|---|---|
+| 1 | `newGame(seed, "kingston")` returns age 21, cash $2,000; the UI shows both on first load |
+| 2 | Passive, competent and greedy medians at week 468 differ by ≥ $50,000 pairwise in the balance report |
+| 3 | ≥ 10 events in content offer a choice with `cashUsd <= -200` or a shady tag |
+| 4 | Balance report lists ≥ 3 distinct delayed consequence event ids that fired with a delay of 52 to 260 weeks across the 900 runs |
+| 5 | `takeLoan`, `launchBusiness` and `buyProperty` each succeed in tests and in `npm run play` |
+| 6 | UI reload restores the identical serialized state from localStorage |
+| 7 | `stage1Complete` is true after step 468; the UI shows the summary screen (SM-020, SM-021) |
+
+### 17.2 Technical exit criteria
 
 1. `npm test` is green.
-2. `npm run balance` runs 100 seeds with passive, competent, and greedy strategies and produces a `report.md` where:
-   - Passive median net worth at week 468 is between $10,000 and $80,000.
-   - Competent median net worth at week 468 is between $500,000 and $2,000,000.
-   - Greedy median net worth at week 468 is between $800,000 and $3,000,000.
-   - Greedy runs trigger at least 1 consequence tag 50% of the time.
+2. `npm run balance` runs 300 seeds per strategy (passive, competent, greedy) and `tests/balance/report.md` meets all section 12 targets:
+   - Passive median net worth at week 468 < $50,000.
+   - Competent median net worth at week 468 ≥ $1,000,000, or competent median age at first $1M between 27.0 and 30.0.
+   - Greedy median age at first $1M < competent median age at first $1M.
+   - ≥ 50% of greedy runs fire ≥ 1 delayed consequence event.
 3. A human can play from week 1 to week 52 in the UI without a crash or uncaught error.
 4. The shoebox event fires before week 97 in every run.
 5. The first loan is obtainable in week 1 if reputation ≥ 15.
 6. Eviction can be triggered and recovered from.
-7. All 40 events validate against the JSON schema.
+7. All events validate against the JSON schema.
 8. `netWorthUsd()` correctly sums cash + assets - liabilities.
 
 ---
 
 ## 18. Open Questions and Conflicts
 
-None at time of writing. Conflicts with CONCEPT.md or LORE.md will be logged in STATE.md and escalated to the human.
+| Date | Conflict | Resolution | Status |
+|---|---|---|---|
+| 2026-11-09 | Section 17 balance targets (passive $10K to $80K, competent $500K to $2M, greedy $800K to $3M at week 468, greedy "consequence tag" 50%) contradicted CONCEPT.md (competent median $1M at age 27 to 32, greedy faster plus ≥ 1 delayed consequence, passive under $50K). Section 12 curve (competent ~$900K at week 468) also missed the CONCEPT target. | CONCEPT targets restored in sections 12 and 17. Greedy metric changed from "consequence tag present" to "delayed consequence event fired". Human directed the fix. | Resolved |
+| 2026-11-09 | CONCEPT.md lists 40 events for the slice. SM-018 adds 11 to 13 events, for 51 to 53. | 40 treated as a floor. Human directed SM-018. | Resolved by human direction |
+| 2026-11-09 | Current passive median at week 468 is $62,400 (report.md), above the restored $50K cap. | Left to `/autotune` in Sprint C. | Open |
+| 2026-11-09 | Exit criterion 5 needs loan, business and property actions. No UI ticket exposes them; SM-022 exposes them in the CLI only. | Pending human decision on a UI action-screens ticket after Sprint B. | Open |
+
+Conflicts with CONCEPT.md or LORE.md are logged here and in STATE.md and escalated to the human.
